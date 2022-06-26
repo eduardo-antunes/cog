@@ -24,20 +24,29 @@
 
 #include <stdio.h>
 
+#include "common.h"
 #include "lexer.h"
+#include "parser.h"
 
 int main()
 {
     char expr[1024];
     fgets(expr, 1024, stdin);
 
+    // Lexing:
     Lexer lex;
     init_lexer(&lex, expr);
-    Token tok;
-    while(1) {
-        tok = get_token(&lex);
+    while(true) {
+        Token tok = get_token(&lex);
         if(tok.type == TOKEN_END) break;
-        printf("%d %.*s\n", tok.type, tok.offset, tok.start);
+        printf("(tok %d %.*s)\n", tok.type, tok.offset, tok.start);
+    }
+
+    // Parsing
+    Parser pr;
+    init_parser(&pr, expr);
+    if(!parse(&pr)) {
+        eprintf("Terrible error!\n");
     }
     return 0;
 }

@@ -20,45 +20,26 @@
    <https://www.gnu.org/licenses/>.
 */
 
-// Lexing analysis component of cog
+// Parsing component for cog
 
-#ifndef COG_LEXER_H
-#define COG_LEXER_H
+#ifndef COG_PARSER_H
+#define COG_PARSER_H
 
-typedef struct {
-    const char *start;
-    const char *current;
-    int line;
-} Lexer;
-
-typedef enum {
-    // 1 character:
-    TOKEN_ADD,
-    TOKEN_SUB,
-    TOKEN_MUL,
-    TOKEN_DIV,
-    TOKEN_OPEN_PAREN,
-    TOKEN_CLOSE_PAREN,
-
-    // n characters:
-    TOKEN_NUM,
-
-    // Special:
-    TOKEN_ERR,
-    TOKEN_END,
-} Token_t;
+#include "common.h"
+#include "lexer.h"
 
 typedef struct {
-    const char *start;
-    Token_t type;
-    int offset;
-    int line;
-} Token;
+    Token current;
+    Token prev;
+    Lexer lex;
+    bool panic;
+    bool had_error;
+} Parser;
 
-// Initialize the lexer
-void init_lexer(Lexer *lex, const char *source);
+// Initialize parser
+void init_parser(Parser *pr, const char *source);
 
-// Yield a single token from source
-Token get_token(Lexer *lex);
+// Does what it promises I guess
+bool parse(Parser *pr);
 
-#endif // COG_LEXER_H
+#endif // COG_PARSER_H
