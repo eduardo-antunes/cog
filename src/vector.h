@@ -20,27 +20,24 @@
    <https://www.gnu.org/licenses/>.
 */
 
-// Parsing component for cog
+#ifndef COG_VECTOR_H
+#define COG_VECTOR_H
 
-#ifndef COG_PARSER_H
-#define COG_PARSER_H
-
-#include "common.h"
 #include "lexer.h"
-#include "vector.h"
 
 typedef struct {
-    Token current;
-    Token prev;
-    Lexer lex;
-    bool panic;
-    bool had_error;
-} Parser;
+    Token *tokens;
+    unsigned capacity;
+    unsigned count;
+} Vector;
 
-// Initialize parser
-void init_parser(Parser *pr, const char *source);
+#define INITIAL_CAPACITY 8
+#define GROWTH_FACTOR 2
 
-// Does what it promises I guess
-bool parse(Parser *pr, Vector *v);
+void vector_init(Vector *v);
 
-#endif // COG_PARSER_H
+void vector_push(Vector *v, Token tok);
+
+void vector_free(Vector *v);
+
+#endif // COG_VECTOR_H

@@ -27,6 +27,9 @@
 #include "common.h"
 #include "parser.h"
 #include "lexer.h"
+#include "vector.h"
+
+Vector *vec;
 
 static void error(Token *tok, const char *msg)
 {
@@ -50,16 +53,6 @@ static void error_current(Parser *pr, const char *msg)
     if(pr->panic) return;
 
     error(&pr->current, msg);
-    pr->had_error = true;
-    pr->panic = true;
-}
-
-static void error_prev(Parser *pr, const char *msg)
-{
-    // Ignore errors when panicking
-    if(pr->panic) return;
-
-    error(&pr->prev, msg);
     pr->had_error = true;
     pr->panic = true;
 }
@@ -114,6 +107,7 @@ static void primary(Parser *pr)
     // Primary thingy
     if(accept(pr, TOKEN_NUM)) {
         // Just a number
+        vector_push(vec, pr->prev);
     } else {
         // Parenthesized expression
         expect(pr, TOKEN_OPEN_PAREN);
@@ -126,8 +120,9 @@ static void unary(Parser *pr)
 {
     // Unary negation
     if(accept(pr, TOKEN_SUB)) {
-        printf("-");
+        Token temp = pr->prev;
         unary(pr);
+        vector_push(vec, temp);
         return;
     }
     primary(pr);
@@ -137,18 +132,20 @@ static void factor(Parser *pr)
 {
     // Factor
     unary(pr);
+    Token temp;
     while(accept(pr, TOKEN_MUL) || accept(pr, TOKEN_DIV)) {
         switch(pr->prev.type) {
             case TOKEN_MUL:
-                printf("*");
+                temp = pr->prev;
                 break;
             case TOKEN_DIV:
-                printf("/");
+                temp = pr->prev;
                 break;
             default:
                 break;
         }
         unary(pr);
+        vector_push(vec, temp);
     }
 }
 
@@ -156,26 +153,27 @@ static void term(Parser *pr)
 {
     // Term
     factor(pr);
+    Token temp;
     while(accept(pr, TOKEN_ADD) || accept(pr, TOKEN_SUB)) {
         switch(pr->prev.type) {
             case TOKEN_ADD:
-                printf("+");
+                temp = pr->prev;
                 break;
             case TOKEN_SUB:
-                printf("-");
+                temp = pr->prev;
                 break;
             default:
                 break;
         }
         factor(pr);
+        vector_push(vec, temp);
     }
 }
 
-bool parse(Parser *pr)
+bool parse(Parser *pr, Vector *v)
 {
+    vec = v;
     advance(pr);
     expression(pr);
-    accept(pr, TOKEN_END);
-    printf("\n");
     return !pr->had_error;
 }

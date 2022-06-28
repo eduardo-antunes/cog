@@ -27,26 +27,25 @@
 #include "common.h"
 #include "lexer.h"
 #include "parser.h"
+#include "vector.h"
 
 int main()
 {
     char expr[1024];
     fgets(expr, 1024, stdin);
 
-    // Lexing:
-    Lexer lex;
-    init_lexer(&lex, expr);
-    while(true) {
-        Token tok = get_token(&lex);
-        if(tok.type == TOKEN_END) break;
-        printf("(tok %d %.*s)\n", tok.type, tok.offset, tok.start);
-    }
-
-    // Parsing
     Parser pr;
     init_parser(&pr, expr);
-    if(!parse(&pr)) {
-        eprintf("Terrible error!\n");
+
+    Vector vec;
+    vector_init(&vec);
+    parse(&pr, &vec);
+    for(int i = 0; i < vec.count; ++i) {
+        Token tok = vec.tokens[i];
+        printf("%.*s ", tok.offset, tok.start);
     }
+
+    printf("\n");
+    vector_free(&vec);
     return 0;
 }

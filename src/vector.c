@@ -20,27 +20,30 @@
    <https://www.gnu.org/licenses/>.
 */
 
-// Parsing component for cog
-
-#ifndef COG_PARSER_H
-#define COG_PARSER_H
+#include <stdlib.h>
 
 #include "common.h"
-#include "lexer.h"
 #include "vector.h"
 
-typedef struct {
-    Token current;
-    Token prev;
-    Lexer lex;
-    bool panic;
-    bool had_error;
-} Parser;
+void vector_init(Vector *v)
+{
+    v->tokens = malloc(sizeof(Token) * INITIAL_CAPACITY);
+    v->capacity = INITIAL_CAPACITY;
+    v->count = 0;
+}
 
-// Initialize parser
-void init_parser(Parser *pr, const char *source);
+void vector_push(Vector *v, Token tok)
+{
+    if(v->count + 1 > v->capacity) {
+        v->capacity *= GROWTH_FACTOR;
+        v->tokens = realloc(v->tokens, v->capacity);
+    }
+    v->tokens[v->count++] = tok;
+}
 
-// Does what it promises I guess
-bool parse(Parser *pr, Vector *v);
-
-#endif // COG_PARSER_H
+void vector_free(Vector *v)
+{
+    free(v->tokens);
+    v->capacity = 0;
+    v->count = 0;
+}
