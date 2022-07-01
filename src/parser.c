@@ -29,9 +29,9 @@
 #include "lexer.h"
 #include "vector.h"
 
-Vector *vec;
+static Vector *vec;
 
-static void error(Token *tok, const char *msg)
+static void report_error(Token *tok, const char *msg)
 {
     eprintf("[line %d] Error", tok->line);
     switch(tok->type) {
@@ -47,12 +47,12 @@ static void error(Token *tok, const char *msg)
     eprintf(": %s\n", msg);
 }
 
-static void error_current(Parser *pr, const char *msg)
+static void error(Parser *pr, const char *msg)
 {
     // Ignore errors when panicking
     if(pr->panic) return;
 
-    error(&pr->current, msg);
+    report_error(&pr->current, msg);
     pr->had_error = true;
     pr->panic = true;
 }
@@ -64,7 +64,7 @@ static void advance(Parser *pr)
     while(true) {
         pr->current = get_token(&pr->lex);
         if(pr->current.type != TOKEN_ERR) break;
-        error_current(pr, pr->current.start);
+        error(pr, pr->current.start);
     }
 }
 
@@ -79,9 +79,11 @@ static bool accept(Parser *pr, Token_t type)
 
 static void expect(Parser *pr, Token_t type)
 {
-    // TODO improve message
-    if(!accept(pr, type))
-        error_current(pr, "expected something else!\n");
+    if(!accept(pr, type)) {
+        char error_msg[32];
+        sprintf(error_msg, "expected token of type %d", type);
+        error(pr, error_msg);
+    }
 }
 
 // Initialize parser
@@ -108,11 +110,13 @@ static void primary(Parser *pr)
     if(accept(pr, TOKEN_NUM)) {
         // Just a number
         vector_push(vec, pr->prev);
-    } else {
+    } else if(accept(pr, TOKEN_OPEN_PAREN)) {
         // Parenthesized expression
-        expect(pr, TOKEN_OPEN_PAREN);
         expression(pr);
         expect(pr, TOKEN_CLOSE_PAREN);
+    } else {
+        error(pr, "unexpected EOF");
+        return;
     }
 }
 

@@ -39,10 +39,13 @@ int main()
 
     Vector vec;
     vector_init(&vec);
-    parse(&pr, &vec);
-    for(int i = 0; i < vec.count; ++i) {
-        Token tok = vec.tokens[i];
-        printf("%.*s ", tok.offset, tok.start);
+    bool alright = parse(&pr, &vec);
+
+    if(alright) {
+        for(int i = 0; i < vec.count; ++i) {
+            Token tok = vec.tokens[i];
+            printf("%.*s ", tok.offset, tok.start);
+        }
     }
 
     printf("\n");
