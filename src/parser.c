@@ -27,9 +27,9 @@
 #include "common.h"
 #include "parser.h"
 #include "lexer.h"
-#include "vector.h"
+#include "box.h"
 
-static Vector *vec;
+static Box *box;
 
 static void report_error(Token *tok, const char *msg)
 {
@@ -87,11 +87,11 @@ static void expect(Parser *pr, Token_t type)
 }
 
 // Initialize parser
-void init_parser(Parser *pr, const char *source)
+void parser_init(Parser *pr, const char *source)
 {
     pr->panic = false;
     pr->had_error = false;
-    init_lexer(&pr->lex, source);
+    lexer_init(&pr->lex, source);
 }
 
 // Recursive descent parser: yes!
@@ -104,12 +104,15 @@ static void expression(Parser *pr)
     term(pr);
 }
 
-static void primary(Parser *pr)
+static void atom(Parser *pr)
 {
     // Primary thingy
     if(accept(pr, TOKEN_NUM)) {
         // Just a number
-        vector_push(vec, pr->prev);
+        double val = strtod(pr->prev.start, NULL);
+        uint8_t i = box_value_write(box, val);
+        box_code_write(box, OP_PUSH);
+        box_code_write(box, i);
     } else if(accept(pr, TOKEN_OPEN_PAREN)) {
         // Parenthesized expression
         expression(pr);
@@ -123,33 +126,32 @@ static void primary(Parser *pr)
 static void unary(Parser *pr)
 {
     // Unary negation
-    if(accept(pr, TOKEN_SUB)) {
-        Token temp = pr->prev;
+    if(accept(pr, TOKEN_MINUS)) {
         unary(pr);
-        vector_push(vec, temp);
+        box_code_write(box, OP_NEG);
         return;
     }
-    primary(pr);
+    atom(pr);
 }
 
 static void factor(Parser *pr)
 {
     // Factor
     unary(pr);
-    Token temp;
-    while(accept(pr, TOKEN_MUL) || accept(pr, TOKEN_DIV)) {
+    Op_code op;
+    while(accept(pr, TOKEN_STAR) || accept(pr, TOKEN_SLASH)) {
         switch(pr->prev.type) {
-            case TOKEN_MUL:
-                temp = pr->prev;
+            case TOKEN_STAR:
+                op = OP_MUL;
                 break;
-            case TOKEN_DIV:
-                temp = pr->prev;
+            case TOKEN_SLASH:
+                op = OP_DIV;
                 break;
             default:
                 break;
         }
         unary(pr);
-        vector_push(vec, temp);
+        box_code_write(box, op);
     }
 }
 
@@ -157,26 +159,26 @@ static void term(Parser *pr)
 {
     // Term
     factor(pr);
-    Token temp;
-    while(accept(pr, TOKEN_ADD) || accept(pr, TOKEN_SUB)) {
+    Op_code op;
+    while(accept(pr, TOKEN_PLUS) || accept(pr, TOKEN_MINUS)) {
         switch(pr->prev.type) {
-            case TOKEN_ADD:
-                temp = pr->prev;
+            case TOKEN_PLUS:
+                op = OP_ADD;
                 break;
-            case TOKEN_SUB:
-                temp = pr->prev;
+            case TOKEN_MINUS:
+                op = OP_SUB;
                 break;
             default:
                 break;
         }
         factor(pr);
-        vector_push(vec, temp);
+        box_code_write(box, op);
     }
 }
 
-bool parse(Parser *pr, Vector *v)
+bool parse(Parser *pr, Box *b)
 {
-    vec = v;
+    box = b;
     advance(pr);
     expression(pr);
     return !pr->had_error;

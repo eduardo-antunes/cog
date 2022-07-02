@@ -20,24 +20,30 @@
    <https://www.gnu.org/licenses/>.
 */
 
-#ifndef COG_VECTOR_H
-#define COG_VECTOR_H
+#include "common.h"
+#include "value.h"
+#include <stdlib.h>
 
-#include "lexer.h"
+void vector_init(Cog_vector *v)
+{
+    v->val = (Cog_val*) malloc(sizeof(Cog_val) *
+            COG_VECTOR_INITIAL_CAPACITY);
+    v->capacity = COG_VECTOR_INITIAL_CAPACITY;
+    v->count = 0;
+}
 
-typedef struct {
-    Token *tokens;
-    unsigned capacity;
-    unsigned count;
-} Vector;
+void vector_push(Cog_vector *v, Cog_val val)
+{
+    if(v->count + 1 < v->capacity) {
+        v->capacity *= COG_VECTOR_GROWTH_FACTOR;
+        v->val = realloc(v->val, v->capacity);
+    }
+    v->val[v->count++] = val;
+}
 
-#define INITIAL_CAPACITY 8
-#define GROWTH_FACTOR 2
-
-void vector_init(Vector *v);
-
-void vector_push(Vector *v, Token tok);
-
-void vector_free(Vector *v);
-
-#endif // COG_VECTOR_H
+void vector_free(Cog_vector *v)
+{
+    free(v->val);
+    v->capacity = 0;
+    v->count = 0;
+}

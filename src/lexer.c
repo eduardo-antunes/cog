@@ -28,7 +28,7 @@
 #define END '\0'
 
 // Initialize the lexer
-void init_lexer(Lexer *lex, const char *source)
+void lexer_init(Lexer *lex, const char *source)
 {
     lex->start = source;
     lex->current = source;
@@ -119,10 +119,10 @@ Token get_token(Lexer *lex)
     char ch = advance(lex);
 
     switch(ch) {
-        case '+': return mktok(lex, TOKEN_ADD);
-        case '-': return mktok(lex, TOKEN_SUB);
-        case '*': return mktok(lex, TOKEN_MUL);
-        case '/': return mktok(lex, TOKEN_DIV);
+        case '+': return mktok(lex, TOKEN_PLUS);
+        case '-': return mktok(lex, TOKEN_MINUS);
+        case '*': return mktok(lex, TOKEN_STAR);
+        case '/': return mktok(lex, TOKEN_SLASH);
         case '(': return mktok(lex, TOKEN_OPEN_PAREN);
         case ')': return mktok(lex, TOKEN_CLOSE_PAREN);
         case END: return mktok(lex, TOKEN_END);

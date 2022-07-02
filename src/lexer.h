@@ -33,10 +33,10 @@ typedef struct {
 
 typedef enum {
     // 1 character:
-    TOKEN_ADD,
-    TOKEN_SUB,
-    TOKEN_MUL,
-    TOKEN_DIV,
+    TOKEN_PLUS,
+    TOKEN_MINUS,
+    TOKEN_STAR,
+    TOKEN_SLASH,
     TOKEN_OPEN_PAREN,
     TOKEN_CLOSE_PAREN,
 
@@ -56,7 +56,7 @@ typedef struct {
 } Token;
 
 // Initialize the lexer
-void init_lexer(Lexer *lex, const char *source);
+void lexer_init(Lexer *lex, const char *source);
 
 // Yield a single token from source
 Token get_token(Lexer *lex);

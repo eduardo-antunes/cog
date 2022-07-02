@@ -20,30 +20,40 @@
    <https://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
+// Everything that relates to bytecode
+
+#ifndef COG_BOX_H
+#define COG_BOX_H
 
 #include "common.h"
-#include "vector.h"
+#include "value.h"
 
-void vector_init(Vector *v)
-{
-    v->tokens = malloc(sizeof(Token) * INITIAL_CAPACITY);
-    v->capacity = INITIAL_CAPACITY;
-    v->count = 0;
-}
+typedef enum {
+    OP_NEG,
+    OP_ADD,
+    OP_SUB,
+    OP_MUL,
+    OP_DIV,
 
-void vector_push(Vector *v, Token tok)
-{
-    if(v->count + 1 > v->capacity) {
-        v->capacity *= GROWTH_FACTOR;
-        v->tokens = realloc(v->tokens, v->capacity);
-    }
-    v->tokens[v->count++] = tok;
-}
+    OP_PUSH,
+} Op_code;
 
-void vector_free(Vector *v)
-{
-    free(v->tokens);
-    v->capacity = 0;
-    v->count = 0;
-}
+#define BOX_CODE_INITIAL_CAPACITY 10
+#define BOX_CODE_GROWTH_FACTOR 2
+
+typedef struct {
+    size_t count;
+    size_t capacity;
+    uint8_t *code;
+    Cog_vector constants;
+} Box;
+
+void box_init(Box *b);
+
+void box_code_write(Box *b, uint8_t byte);
+
+uint8_t box_value_write(Box *b, Cog_val val);
+
+void box_free(Box *b);
+
+#endif // COG_BOX_H

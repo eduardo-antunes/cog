@@ -25,6 +25,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define eprintf(...) \
     printf(__VA_ARGS__)

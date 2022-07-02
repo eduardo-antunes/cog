@@ -20,27 +20,40 @@
    <https://www.gnu.org/licenses/>.
 */
 
-// Parsing component for cog
-
-#ifndef COG_PARSER_H
-#define COG_PARSER_H
+#include <stdlib.h>
 
 #include "common.h"
-#include "lexer.h"
 #include "box.h"
+#include "value.h"
 
-typedef struct {
-    Token current;
-    Token prev;
-    Lexer lex;
-    bool panic;
-    bool had_error;
-} Parser;
+void box_init(Box *b)
+{
+    b->count = 0;
+    b->capacity = BOX_CODE_INITIAL_CAPACITY;
+    b->code = (uint8_t*) malloc(sizeof(uint8_t) *
+            BOX_CODE_INITIAL_CAPACITY);
+    vector_init(&b->constants);
+}
 
-// Initialize parser
-void parser_init(Parser *pr, const char *source);
+void box_code_write(Box *b, uint8_t byte)
+{
+    if(b->count + 1 > b->capacity) {
+        b->capacity *= BOX_CODE_GROWTH_FACTOR;
+        b->code = realloc(b->code, b->capacity);
+    }
+    b->code[b->count++] = byte;
+}
 
-// Does what it promises I guess
-bool parse(Parser *pr, Box *b);
+uint8_t box_value_write(Box *b, Cog_val val)
+{
+    vector_push(&b->constants, val);
+    return b->constants.count - 1;
+}
 
-#endif // COG_PARSER_H
+void box_free(Box *b)
+{
+    b->count = 0;
+    b->capacity = 0;
+    free(b->code);
+    vector_free(&b->constants);
+}

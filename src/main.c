@@ -27,7 +27,7 @@
 #include "common.h"
 #include "lexer.h"
 #include "parser.h"
-#include "vector.h"
+#include "box.h"
 
 int main()
 {
@@ -35,20 +35,40 @@ int main()
     fgets(expr, 1024, stdin);
 
     Parser pr;
-    init_parser(&pr, expr);
-
-    Vector vec;
-    vector_init(&vec);
-    bool alright = parse(&pr, &vec);
+    parser_init(&pr, expr);
+    Box box;
+    box_init(&box);
+    bool alright = parse(&pr, &box);
 
     if(alright) {
-        for(int i = 0; i < vec.count; ++i) {
-            Token tok = vec.tokens[i];
-            printf("%.*s ", tok.offset, tok.start);
+        uint8_t j;
+        for(size_t i = 0; i < box.count; ++i) {
+            switch(box.code[i]) {
+                case OP_NEG:
+                    printf("neg ");
+                    break;
+                case OP_ADD:
+                    printf("+ ");
+                    break;
+                case OP_SUB:
+                    printf("- ");
+                    break;
+                case OP_MUL:
+                    printf("* ");
+                    break;
+                case OP_DIV:
+                    printf("/ ");
+                    break;
+                case OP_PUSH:
+                    j = box.code[i + 1];
+                    printf("%g ", box.constants.val[j]);
+                    ++i;
+                    break;
+            }
         }
     }
 
+    box_free(&box);
     printf("\n");
-    vector_free(&vec);
     return 0;
 }
