@@ -20,28 +20,12 @@
    <https://www.gnu.org/licenses/>.
 */
 
-#ifndef COG_VALUE_H
-#define COG_VALUE_H
+#ifndef COG_VM_H
+#define COG_VM_H
 
-#include "common.h"
+#include "box.h"
+#include "value.h"
 
-typedef double Cog_val; // temp
+Cog_val execute(Box *box);
 
-#define COG_VECTOR_INITIAL_CAPACITY 10
-#define COG_VECTOR_GROWTH_FACTOR 2
-
-typedef struct {
-    Cog_val *val;
-    size_t count;
-    size_t capacity;
-} Cog_vector;
-
-void vector_init(Cog_vector *v);
-
-void vector_push(Cog_vector *v, Cog_val val);
-
-Cog_val vector_pop(Cog_vector *v);
-
-void vector_free(Cog_vector *v);
-
-#endif // COG_VALUE_H
+#endif // COG_VM_H

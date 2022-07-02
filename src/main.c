@@ -25,9 +25,9 @@
 #include <stdio.h>
 
 #include "common.h"
-#include "lexer.h"
 #include "parser.h"
 #include "box.h"
+#include "vm.h"
 
 int main()
 {
@@ -41,31 +41,8 @@ int main()
     bool alright = parse(&pr, &box);
 
     if(alright) {
-        uint8_t j;
-        for(size_t i = 0; i < box.count; ++i) {
-            switch(box.code[i]) {
-                case OP_NEG:
-                    printf("neg ");
-                    break;
-                case OP_ADD:
-                    printf("+ ");
-                    break;
-                case OP_SUB:
-                    printf("- ");
-                    break;
-                case OP_MUL:
-                    printf("* ");
-                    break;
-                case OP_DIV:
-                    printf("/ ");
-                    break;
-                case OP_PUSH:
-                    j = box.code[i + 1];
-                    printf("%g ", box.constants.val[j]);
-                    ++i;
-                    break;
-            }
-        }
+        Cog_val r = execute(&box);
+        printf("= %g", r);
     }
 
     box_free(&box);

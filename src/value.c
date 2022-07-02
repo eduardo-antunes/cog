@@ -41,6 +41,12 @@ void vector_push(Cog_vector *v, Cog_val val)
     v->val[v->count++] = val;
 }
 
+Cog_val vector_pop(Cog_vector *v)
+{
+    // TODO: avoid out of range index access
+    return v->val[--v->count];
+}
+
 void vector_free(Cog_vector *v)
 {
     free(v->val);
