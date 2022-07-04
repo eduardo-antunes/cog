@@ -32,8 +32,8 @@ typedef double Cog_val; // temp
 
 typedef struct {
     Cog_val *val;
-    size_t count;
-    size_t capacity;
+    unsigned count;
+    unsigned capacity;
 } Cog_vector;
 
 void vector_init(Cog_vector *v);
@@ -41,6 +41,8 @@ void vector_init(Cog_vector *v);
 void vector_push(Cog_vector *v, Cog_val val);
 
 Cog_val vector_pop(Cog_vector *v);
+
+Cog_val vector_get(unsigned index);
 
 void vector_free(Cog_vector *v);
 

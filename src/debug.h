@@ -20,40 +20,11 @@
    <https://www.gnu.org/licenses/>.
 */
 
-// Everything that relates to bytecode
+#ifndef COG_DEBUG_H
+#define COG_DEBUG_H
 
-#ifndef COG_BOX_H
-#define COG_BOX_H
+#include "box.h"
 
-#include "common.h"
-#include "value.h"
+void disassemble(const Box *box);
 
-typedef enum {
-    OP_NEG,
-    OP_ADD,
-    OP_SUB,
-    OP_MUL,
-    OP_DIV,
-
-    OP_PUSH,
-} Op_code;
-
-#define BOX_CODE_INITIAL_CAPACITY 10
-#define BOX_CODE_GROWTH_FACTOR 2
-
-typedef struct {
-    uint8_t *code;
-    unsigned count;
-    unsigned capacity;
-    Cog_vector constants;
-} Box;
-
-void box_init(Box *b);
-
-void box_code_write(Box *b, uint8_t byte);
-
-uint8_t box_value_write(Box *b, Cog_val val);
-
-void box_free(Box *b);
-
-#endif // COG_BOX_H
+#endif // COG_DEBUG_H

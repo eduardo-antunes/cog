@@ -26,6 +26,7 @@
 
 #include "common.h"
 #include "parser.h"
+#include "debug.h"
 #include "box.h"
 #include "vm.h"
 
@@ -40,12 +41,8 @@ int main()
     box_init(&box);
     bool alright = parse(&pr, &box);
 
-    if(alright) {
-        Cog_val r = execute(&box);
-        printf("= %g", r);
-    }
+    if(alright) disassemble(&box);
 
     box_free(&box);
-    printf("\n");
     return 0;
 }

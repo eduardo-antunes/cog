@@ -20,56 +20,41 @@
    <https://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
+
 #include "box.h"
 #include "common.h"
+#include "debug.h"
 #include "value.h"
-#include "vm.h"
 
-Cog_val execute(Box *box)
+void disassemble(const Box *box)
 {
     uint8_t ind;
-    Cog_val x, y;
-    Cog_vector vec;
-    vector_init(&vec);
-
+    Cog_val val;
     for(unsigned i = 0; i < box->count; ++i) {
         switch(box->code[i]) {
-            // Unary operations
             case OP_NEG:
-                x = vector_pop(&vec);
-                vector_push(&vec, -x);
+                printf("neg\n");
                 break;
 
-            // Binary operations
             case OP_ADD:
-                y = vector_pop(&vec);
-                x = vector_pop(&vec);
-                vector_push(&vec, x + y);
+                printf("add\n");
                 break;
             case OP_SUB:
-                y = vector_pop(&vec);
-                x = vector_pop(&vec);
-                vector_push(&vec, x - y);
+                printf("sub\n");
                 break;
             case OP_MUL:
-                y = vector_pop(&vec);
-                x = vector_pop(&vec);
-                vector_push(&vec, x * y);
+                printf("mul\n");
                 break;
             case OP_DIV:
-                y = vector_pop(&vec);
-                x = vector_pop(&vec);
-                vector_push(&vec, x / y);
+                printf("div\n");
                 break;
 
-            // Constant loading operations
             case OP_PUSH:
                 ind = box->code[++i];
-                Cog_val val = box->constants.val[ind];
-                vector_push(&vec, val);
+                val = box->constants.val[ind];
+                printf("push %g\n", val);
                 break;
         }
     }
-
-    return vector_pop(&vec);
 }
