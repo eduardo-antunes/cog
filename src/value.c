@@ -20,9 +20,10 @@
    <https://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>
+
 #include "common.h"
 #include "value.h"
-#include <stdlib.h>
 
 void vector_init(Cog_vector *v)
 {
@@ -38,12 +39,21 @@ void vector_push(Cog_vector *v, Cog_val val)
         v->capacity *= COG_VECTOR_GROWTH_FACTOR;
         v->val = realloc(v->val, v->capacity);
     }
-    v->val[v->count++] = val;
+    v->val[v->count] = val;
+    v->count++;
+}
+
+Cog_val vector_get(const Cog_vector *v, unsigned int index)
+{
+    if(index >= v->count) {
+        // TODO: signal an error somehow
+        return 0;
+    }
+    return v->val[index];
 }
 
 Cog_val vector_pop(Cog_vector *v)
 {
-    // TODO: avoid out of range index access
     return v->val[--v->count];
 }
 

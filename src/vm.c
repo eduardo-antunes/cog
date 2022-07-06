@@ -20,9 +20,9 @@
    <https://www.gnu.org/licenses/>.
 */
 
-#include "box.h"
 #include "common.h"
 #include "value.h"
+#include "box.h"
 #include "vm.h"
 
 Cog_val execute(Box *box)
@@ -65,7 +65,7 @@ Cog_val execute(Box *box)
             // Constant loading operations
             case OP_PUSH:
                 ind = box->code[++i];
-                Cog_val val = box->constants.val[ind];
+                Cog_val val = vector_get(&box->constants, ind);
                 vector_push(&vec, val);
                 break;
         }

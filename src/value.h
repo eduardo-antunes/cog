@@ -40,9 +40,9 @@ void vector_init(Cog_vector *v);
 
 void vector_push(Cog_vector *v, Cog_val val);
 
-Cog_val vector_pop(Cog_vector *v);
+Cog_val vector_get(const Cog_vector *v, unsigned index);
 
-Cog_val vector_get(unsigned index);
+Cog_val vector_pop(Cog_vector *v);
 
 void vector_free(Cog_vector *v);
 
