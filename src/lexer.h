@@ -40,8 +40,15 @@ typedef enum {
     TOKEN_OPEN_PAREN,
     TOKEN_CLOSE_PAREN,
 
+    TOKEN_TRUE,
+    TOKEN_FALSE,
+    TOKEN_NOT,
+    TOKEN_AND,
+    TOKEN_OR,
+
     // n characters:
     TOKEN_NUM,
+    TOKEN_ID,
 
     // Special:
     TOKEN_ERR,

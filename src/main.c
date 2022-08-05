@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 
+#include "lexer.h"
 #include "common.h"
 #include "parser.h"
 #include "debug.h"
@@ -35,14 +36,24 @@ int main()
     char expr[1024];
     fgets(expr, 1024, stdin);
 
-    Parser pr;
+    /* Parser pr;
     parser_init(&pr, expr);
     Box box;
     box_init(&box);
     bool alright = parse(&pr, &box);
 
     if(alright) disassemble(&box);
+    box_free(&box); */
 
-    box_free(&box);
+    Lexer lex;
+    lexer_init(&lex, expr);
+    Token tok;
+
+    while(true) {
+        tok = get_token(&lex);
+        if(tok.type == TOKEN_END) break;
+        printf("token %d: %.*s\n", tok.type, tok.offset, tok.start);
+    }
+
     return 0;
 }

@@ -23,9 +23,15 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "common.h"
 #include "lexer.h"
 
 #define END '\0'
+
+static bool is_valid(char ch)
+{
+    return isalpha(ch) || ch == '_';
+}
 
 // Initialize the lexer
 void lexer_init(Lexer *lex, const char *source)
@@ -87,6 +93,60 @@ static Token number_tok(Lexer *lex)
     return mktok(lex, TOKEN_NUM);
 }
 
+static bool check_keyword(Lexer *lex, const char *rest)
+{
+    int len = strlen(rest);
+    for(int i = 1; i <= len; ++i) {
+        if(lex->start[i] != rest[i + 1])
+            return false;
+    }
+    return true;
+}
+
+// Decide whether a valid id is a keyword
+static Token_t id_tok_type(Lexer *lex)
+{
+    bool keyword = false;
+    switch(lex->start[0]) {
+        case 'a':
+            // and
+            keyword = check_keyword(lex, "nd");
+            if(keyword) return TOKEN_AND;
+            break;
+        case 'f':
+            // false keyword
+            keyword = check_keyword(lex, "alse");
+            if(keyword) return TOKEN_FALSE;
+            break;
+        case 'o':
+            // or
+            keyword = check_keyword(lex, "r");
+            if(keyword) return TOKEN_OR;
+            break;
+        case 'n':
+            // not
+            keyword = check_keyword(lex, "ot");
+            if(keyword) return TOKEN_OR;
+            break;
+        case 't':
+            // true keyword
+            keyword = check_keyword(lex, "rue");
+            if(keyword) return TOKEN_TRUE;
+            break;
+    }
+
+    return TOKEN_ID;
+}
+
+// Tokenize an identifier/keyword
+static Token id_tok(Lexer *lex)
+{
+    while(is_valid(peek(lex)) || isdigit(peek(lex))) 
+        advance(lex);
+
+    return mktok(lex, id_tok_type(lex));
+}
+
 // Ignore whitespace and comments
 static void ignore_whitespace(Lexer *lex)
 {
@@ -128,7 +188,11 @@ Token get_token(Lexer *lex)
         case END: return mktok(lex, TOKEN_END);
     }
 
-    if(isdigit(ch)) return number_tok(lex);
+    if(is_valid(ch)) 
+        return id_tok(lex);
+
+    else if(isdigit(ch)) 
+        return number_tok(lex);
 
     return lex_error(lex, "Unrecognized char");
 }
