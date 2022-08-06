@@ -21,146 +21,146 @@
 */
 
 #include <string.h>
-#include <ctype.h>
 
 #include "common.h"
 #include "lexer.h"
 
+// Utility functions and definitions ------------------------------
+
 #define END '\0'
 
-static bool is_valid(char ch)
+static bool is_alpha(char ch)
 {
-    return isalpha(ch) || ch == '_';
+    return (ch >= 'a' && ch <= 'z') 
+        || (ch >= 'A' && ch <= 'Z')
+        || ch == '_';
 }
 
-// Initialize the lexer
-void lexer_init(Lexer *lex, const char *source)
+static bool is_digit(char ch)
 {
-    lex->start = source;
-    lex->current = source;
-    lex->line = 1;
+    return ch >= '0' && ch <= 9;
 }
 
-// See the current character and move the
-// lexer a character forward
+static bool is_space(char ch)
+{
+    return ch == ' ' 
+        || ch == '\n' 
+        || ch == '\r' 
+        || ch == '\t' 
+        || ch == '\v';
+}
+
+// Core functions -------------------------------------------------
+
 static char advance(Lexer *lex)
 {
-    lex->current++;
+    ++lex->current;
     return lex->current[-1];
 }
 
-// See the current character
 static char peek(Lexer *lex)
 {
     return lex->current[0];
 }
 
-// Make a token using the lexer's current state
-static Token mktok(Lexer *lex, Token_t t)
+static Token make_token(Lexer *lex, Token_t type)
 {
     Token tok;
     tok.start = lex->start;
     tok.offset = lex->current - lex->start;
     tok.line = lex->line;
-    tok.type = t;
+    tok.type = type;
     return tok;
 }
 
-// Report an error as an error token
-static Token lex_error(Lexer *lex, const char *why)
+static Token lex_error(Lexer *lex, const char *msg)
 {
     Token err;
     err.type = TOKEN_ERR;
     err.line = lex->line;
-    err.start = why;
-    err.offset = strlen(why);
+    err.start = msg;
+    err.offset = strlen(msg);
     return err;
 }
 
-// Tokenize a number, integer or floating-point
+// Especialized lexing functions ----------------------------------
+
 static Token number_tok(Lexer *lex)
 {
-    // Integer part
-    while(isdigit(peek(lex))) advance(lex);
+    // integer part
+    while(is_digit(peek(lex))) advance(lex);
 
-    // Optional decimal part
+    // decimal part
     if(peek(lex) == '.') {
         advance(lex);
-        while(isdigit(peek(lex)))
+        while(is_digit(peek(lex)))
             advance(lex);
     }
 
-    return mktok(lex, TOKEN_NUM);
+    return make_token(lex, TOKEN_NUM);
 }
 
-static bool check_keyword(Lexer *lex, const char *rest)
+static Token_t check_keyword(Lexer *lex, int start, 
+        int length, const char *rest, Token_t type)
 {
-    int len = strlen(rest);
-    for(int i = 1; i <= len; ++i) {
-        if(lex->start[i] != rest[i + 1])
-            return false;
-    }
-    return true;
+    // Credits for this function go to Bob Nystrom.
+    // This is just so straightforward, I had to use it.
+    if(lex->current - lex->start == start + length &&
+            memcmp(lex->start + start, rest, length) == 0)
+        return type;
+
+    return TOKEN_ID;
 }
 
-// Decide whether a valid id is a keyword
-static Token_t id_tok_type(Lexer *lex)
+static Token_t identifier_type(Lexer *lex)
 {
-    bool keyword = false;
     switch(lex->start[0]) {
         case 'a':
             // and
-            keyword = check_keyword(lex, "nd");
-            if(keyword) return TOKEN_AND;
-            break;
+            return check_keyword(lex, 1, 2, "nd", TOKEN_AND);
         case 'f':
-            // false keyword
-            keyword = check_keyword(lex, "alse");
-            if(keyword) return TOKEN_FALSE;
-            break;
+            // false
+            return check_keyword(lex, 1, 4, "alse", TOKEN_FALSE);
         case 'o':
             // or
-            keyword = check_keyword(lex, "r");
-            if(keyword) return TOKEN_OR;
-            break;
+            return check_keyword(lex, 1, 1, "r", TOKEN_OR);
         case 'n':
             // not
-            keyword = check_keyword(lex, "ot");
-            if(keyword) return TOKEN_OR;
-            break;
+            return check_keyword(lex, 1, 2, "ot", TOKEN_NOT);
         case 't':
-            // true keyword
-            keyword = check_keyword(lex, "rue");
-            if(keyword) return TOKEN_TRUE;
-            break;
+            // true
+            return check_keyword(lex, 1, 3, "rue", TOKEN_TRUE);
     }
 
     return TOKEN_ID;
 }
 
-// Tokenize an identifier/keyword
-static Token id_tok(Lexer *lex)
+static Token identifier_tok(Lexer *lex)
 {
-    while(is_valid(peek(lex)) || isdigit(peek(lex))) 
+    // We've already consumed the first character, so
+    // the rest can be digits, no problem.
+    while(is_alpha(peek(lex)) || is_digit(peek(lex))) 
         advance(lex);
 
-    return mktok(lex, id_tok_type(lex));
+    // Keywords fit the same structure as identifiers,
+    // so what we've just read might be one. We use
+    // identifier_type to account for that.
+    return make_token(lex, identifier_type(lex));
 }
 
-// Ignore whitespace and comments
 static void ignore_whitespace(Lexer *lex)
 {
     char ch;
-    while(isspace(peek(lex)) || peek(lex) == '#') {
+    while(is_space(peek(lex)) || peek(lex) == '#') {
         ch = advance(lex);
         switch(ch) {
             case '\n':
-                lex->line++;
+                ++lex->line;
                 break;
             case '\r':
                 if(peek(lex) == '\n')
                     advance(lex);
-                lex->line++;
+                ++lex->line;
                 break;
             case '#':
                 while(peek(lex) != '\n' && peek(lex) != '\r')
@@ -170,7 +170,15 @@ static void ignore_whitespace(Lexer *lex)
     }
 }
 
-// Yield a single token from source
+// Public interface -----------------------------------------------
+
+void lexer_init(Lexer *lex, const char *source)
+{
+    lex->start = source;
+    lex->current = source;
+    lex->line = 1;
+}
+
 Token get_token(Lexer *lex)
 {
     ignore_whitespace(lex);
@@ -179,19 +187,19 @@ Token get_token(Lexer *lex)
     char ch = advance(lex);
 
     switch(ch) {
-        case '+': return mktok(lex, TOKEN_PLUS);
-        case '-': return mktok(lex, TOKEN_MINUS);
-        case '*': return mktok(lex, TOKEN_STAR);
-        case '/': return mktok(lex, TOKEN_SLASH);
-        case '(': return mktok(lex, TOKEN_OPEN_PAREN);
-        case ')': return mktok(lex, TOKEN_CLOSE_PAREN);
-        case END: return mktok(lex, TOKEN_END);
+        case '+': return make_token(lex, TOKEN_PLUS);
+        case '-': return make_token(lex, TOKEN_MINUS);
+        case '*': return make_token(lex, TOKEN_STAR);
+        case '/': return make_token(lex, TOKEN_SLASH);
+        case '(': return make_token(lex, TOKEN_OPEN_PAREN);
+        case ')': return make_token(lex, TOKEN_CLOSE_PAREN);
+        case END: return make_token(lex, TOKEN_END);
     }
 
-    if(is_valid(ch)) 
-        return id_tok(lex);
+    if(is_alpha(ch)) 
+        return identifier_tok(lex);
 
-    else if(isdigit(ch)) 
+    if(is_digit(ch)) 
         return number_tok(lex);
 
     return lex_error(lex, "Unrecognized char");

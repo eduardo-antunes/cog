@@ -29,33 +29,39 @@
 #include "lexer.h"
 #include "box.h"
 
-static Box *box;
+// Error reporting functions --------------------------------------
 
-static void report_error(Token *tok, const char *msg)
+static void error_at(Token *tok, const char *msg)
 {
-    eprintf("[line %d] Error", tok->line);
+    eprintf("Error at ");
     switch(tok->type) {
         case TOKEN_END:
-            eprintf(" at end");
-            break;
-        case TOKEN_ERR:
-            // Nothing
+            eprintf("end: %s\n", msg);
             break;
         default:
-            eprintf(" at '%.*s'", tok->offset, tok->start);
+            eprintf("line %d: %s\n", tok->line, msg);
     }
-    eprintf(": %s\n", msg);
 }
 
-static void error(Parser *pr, const char *msg)
+static void error(Parser *pr, const char *format, ...)
 {
     // Ignore errors when panicking
     if(pr->panic) return;
 
-    report_error(&pr->current, msg);
+    // Format error message
+    char msg[32];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(msg, 32, format, args);
+    va_end(args);
+
+    // Report error and set error flags
+    error_at(&pr->current, msg);
     pr->had_error = true;
     pr->panic = true;
 }
+
+// Core functions -------------------------------------------------
 
 static void advance(Parser *pr)
 {
@@ -68,7 +74,7 @@ static void advance(Parser *pr)
     }
 }
 
-static bool accept(Parser *pr, Token_t type)
+static bool match(Parser *pr, Token_t type)
 {
     if(pr->current.type == type) {
         advance(pr);
@@ -79,67 +85,61 @@ static bool accept(Parser *pr, Token_t type)
 
 static void expect(Parser *pr, Token_t type)
 {
-    if(!accept(pr, type)) {
-        char error_msg[32];
-        sprintf(error_msg, "expected token of type %d", type);
-        error(pr, error_msg);
+    if(!match(pr, type)) {
+        error(pr, "expected token of type %d", type);
     }
 }
 
-// Initialize parser
-void parser_init(Parser *pr, const char *source)
+// Parsing functions ----------------------------------------------
+
+// Just a plain old recursive descent algorithm.
+
+static void term(Parser *pr, Box *box);
+
+static void expression(Parser *pr, Box *box)
 {
-    pr->panic = false;
-    pr->had_error = false;
-    lexer_init(&pr->lex, source);
+    term(pr, box);
 }
 
-// Recursive descent parser: yes!
-
-static void term(Parser *pr);
-
-static void expression(Parser *pr)
+static void primary(Parser *pr, Box *box)
 {
-    // Parses a whole expression
-    term(pr);
-}
-
-static void atom(Parser *pr)
-{
-    // Primary thingy
-    if(accept(pr, TOKEN_NUM)) {
-        // Just a number
+    // Lonely number
+    if(match(pr, TOKEN_NUM)) {
+        // gotta store its value
         double val = strtod(pr->prev.start, NULL);
         uint8_t i = box_value_write(box, val);
         box_code_write(box, OP_PUSH);
         box_code_write(box, i);
-    } else if(accept(pr, TOKEN_OPEN_PAREN)) {
-        // Parenthesized expression
-        expression(pr);
+
+    // Parenthesized thing
+    } else if(match(pr, TOKEN_OPEN_PAREN)) {
+        expression(pr, box);
         expect(pr, TOKEN_CLOSE_PAREN);
+
+    // Something else
     } else {
         error(pr, "unexpected EOF");
         return;
     }
 }
 
-static void unary(Parser *pr)
+static void unary(Parser *pr, Box *box)
 {
     // Unary negation
-    if(accept(pr, TOKEN_MINUS)) {
-        unary(pr);
+    if(match(pr, TOKEN_MINUS)) {
+        unary(pr, box);
         box_code_write(box, OP_NEG);
         return;
     }
-    atom(pr);
+    primary(pr, box);
 }
 
-static void factor(Parser *pr)
+static void factor(Parser *pr, Box *box)
 {
     // Factor
-    unary(pr);
+    unary(pr, box);
     Op_code op;
-    while(accept(pr, TOKEN_STAR) || accept(pr, TOKEN_SLASH)) {
+    while(match(pr, TOKEN_STAR) || match(pr, TOKEN_SLASH)) {
         switch(pr->prev.type) {
             case TOKEN_STAR:
                 op = OP_MUL;
@@ -150,17 +150,17 @@ static void factor(Parser *pr)
             default:
                 break;
         }
-        unary(pr);
+        unary(pr, box);
         box_code_write(box, op);
     }
 }
 
-static void term(Parser *pr)
+static void term(Parser *pr, Box *box)
 {
     // Term
-    factor(pr);
+    factor(pr, box);
     Op_code op;
-    while(accept(pr, TOKEN_PLUS) || accept(pr, TOKEN_MINUS)) {
+    while(match(pr, TOKEN_PLUS) || match(pr, TOKEN_MINUS)) {
         switch(pr->prev.type) {
             case TOKEN_PLUS:
                 op = OP_ADD;
@@ -171,15 +171,23 @@ static void term(Parser *pr)
             default:
                 break;
         }
-        factor(pr);
+        factor(pr, box);
         box_code_write(box, op);
     }
 }
 
-bool parse(Parser *pr, Box *b)
+// Public interface -----------------------------------------------
+
+void parser_init(Parser *pr, const char *source)
 {
-    box = b;
+    pr->panic = false;
+    pr->had_error = false;
+    lexer_init(&pr->lex, source);
+}
+
+bool parse(Parser *pr, Box *box)
+{
     advance(pr);
-    expression(pr);
+    expression(pr, box);
     return !pr->had_error;
 }
