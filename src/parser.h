@@ -29,6 +29,9 @@
 #include "lexer.h"
 #include "box.h"
 
+#define DEF_PARSE(fn) \
+    static void fn(Parser *pr, Box *box)
+
 typedef struct {
     Token current;
     Token prev;

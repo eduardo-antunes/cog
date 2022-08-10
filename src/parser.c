@@ -67,6 +67,7 @@ static void advance(Parser *pr)
 {
     pr->prev = pr->current;
 
+    // Report error tokens
     while(true) {
         pr->current = get_token(&pr->lex);
         if(pr->current.type != TOKEN_ERR) break;
@@ -85,23 +86,20 @@ static bool match(Parser *pr, Token_t type)
 
 static void expect(Parser *pr, Token_t type)
 {
-    if(!match(pr, type)) {
+    if(!match(pr, type))
         error(pr, "expected token of type %d", type);
-    }
 }
 
 // Parsing functions ----------------------------------------------
 
-// Just a plain old recursive descent algorithm.
+DEF_PARSE(disjunction);
 
-static void disjunction(Parser *pr, Box *box);
-
-static void expression(Parser *pr, Box *box)
+DEF_PARSE(expression)
 {
     disjunction(pr, box);
 }
 
-static void primary(Parser *pr, Box *box)
+DEF_PARSE(primary)
 {
     switch(pr->current.type) {
         case TOKEN_NUM:
@@ -111,45 +109,53 @@ static void primary(Parser *pr, Box *box)
             box_code_write(box, OP_PUSH);
             box_code_write(box, i);
             break;
+
         case TOKEN_TRUE:
             advance(pr);
             box_code_write(box, OP_TRUE);
             break;
+
         case TOKEN_FALSE:
             advance(pr);
             box_code_write(box, OP_FALSE);
             break;
+
         case TOKEN_OPEN_PAREN:
             advance(pr);
             expression(pr, box);
             expect(pr, TOKEN_CLOSE_PAREN);
             break;
+
         default:
             error(pr, "unexpected EOF");
     }
 }
 
-static void unary(Parser *pr, Box *box)
+DEF_PARSE(unary)
 {
-    if(match(pr, TOKEN_MINUS)) {
-        unary(pr, box);
-        box_code_write(box, OP_NEG);
-        return;
-    }
+    switch(pr->current.type) {
+        case TOKEN_MINUS:
+            advance(pr);
+            box_code_write(box, OP_NEG);
+            unary(pr, box);
+            break;
 
-    if(match(pr, TOKEN_NOT)) {
-        unary(pr, box);
-        box_code_write(box, OP_NOT);
-        return;
-    }
+        case TOKEN_NOT:
+            advance(pr);
+            box_code_write(box, OP_NOT);
+            unary(pr, box);
+            break;
 
+        default:
+            break;
+    }
     primary(pr, box);
 }
 
-static void factor(Parser *pr, Box *box)
+DEF_PARSE(factor)
 {
-    // Factor
     unary(pr, box);
+
     Op_code op;
     while(match(pr, TOKEN_STAR) || match(pr, TOKEN_SLASH)) {
         switch(pr->prev.type) {
@@ -167,10 +173,10 @@ static void factor(Parser *pr, Box *box)
     }
 }
 
-static void term(Parser *pr, Box *box)
+DEF_PARSE(term)
 {
-    // Term
     factor(pr, box);
+
     Op_code op;
     while(match(pr, TOKEN_PLUS) || match(pr, TOKEN_MINUS)) {
         switch(pr->prev.type) {
@@ -188,7 +194,7 @@ static void term(Parser *pr, Box *box)
     }
 }
 
-static void conjunction(Parser *pr, Box *box)
+DEF_PARSE(conjunction)
 {
     term(pr, box);
     while(match(pr, TOKEN_AND)) {
@@ -197,7 +203,7 @@ static void conjunction(Parser *pr, Box *box)
     }
 }
 
-static void disjunction(Parser *pr, Box *box)
+DEF_PARSE(disjunction)
 {
     conjunction(pr, box);
     while(match(pr, TOKEN_OR)) {
