@@ -38,7 +38,7 @@ static bool is_alpha(char ch)
 
 static bool is_digit(char ch)
 {
-    return ch >= '0' && ch <= 9;
+    return ch >= '0' && ch <= '9';
 }
 
 static bool is_space(char ch)

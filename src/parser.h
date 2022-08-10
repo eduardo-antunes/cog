@@ -37,10 +37,8 @@ typedef struct {
     bool had_error;
 } Parser;
 
-// Initialize parser
 void parser_init(Parser *pr, const char *source);
 
-// Does what it promises I guess
 bool parse(Parser *pr, Box *b);
 
 #endif // COG_PARSER_H

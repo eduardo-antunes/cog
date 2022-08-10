@@ -94,43 +94,55 @@ static void expect(Parser *pr, Token_t type)
 
 // Just a plain old recursive descent algorithm.
 
-static void term(Parser *pr, Box *box);
+static void disjunction(Parser *pr, Box *box);
 
 static void expression(Parser *pr, Box *box)
 {
-    term(pr, box);
+    disjunction(pr, box);
 }
 
 static void primary(Parser *pr, Box *box)
 {
-    // Lonely number
-    if(match(pr, TOKEN_NUM)) {
-        // gotta store its value
-        double val = strtod(pr->prev.start, NULL);
-        uint8_t i = box_value_write(box, val);
-        box_code_write(box, OP_PUSH);
-        box_code_write(box, i);
-
-    // Parenthesized thing
-    } else if(match(pr, TOKEN_OPEN_PAREN)) {
-        expression(pr, box);
-        expect(pr, TOKEN_CLOSE_PAREN);
-
-    // Something else
-    } else {
-        error(pr, "unexpected EOF");
-        return;
+    switch(pr->current.type) {
+        case TOKEN_NUM:
+            advance(pr);
+            double val = strtod(pr->prev.start, NULL);
+            uint8_t i = box_value_write(box, val);
+            box_code_write(box, OP_PUSH);
+            box_code_write(box, i);
+            break;
+        case TOKEN_TRUE:
+            advance(pr);
+            box_code_write(box, OP_TRUE);
+            break;
+        case TOKEN_FALSE:
+            advance(pr);
+            box_code_write(box, OP_FALSE);
+            break;
+        case TOKEN_OPEN_PAREN:
+            advance(pr);
+            expression(pr, box);
+            expect(pr, TOKEN_CLOSE_PAREN);
+            break;
+        default:
+            error(pr, "unexpected EOF");
     }
 }
 
 static void unary(Parser *pr, Box *box)
 {
-    // Unary negation
     if(match(pr, TOKEN_MINUS)) {
         unary(pr, box);
         box_code_write(box, OP_NEG);
         return;
     }
+
+    if(match(pr, TOKEN_NOT)) {
+        unary(pr, box);
+        box_code_write(box, OP_NOT);
+        return;
+    }
+
     primary(pr, box);
 }
 
@@ -173,6 +185,24 @@ static void term(Parser *pr, Box *box)
         }
         factor(pr, box);
         box_code_write(box, op);
+    }
+}
+
+static void conjunction(Parser *pr, Box *box)
+{
+    term(pr, box);
+    while(match(pr, TOKEN_AND)) {
+        term(pr, box);
+        box_code_write(box, OP_AND);
+    }
+}
+
+static void disjunction(Parser *pr, Box *box)
+{
+    conjunction(pr, box);
+    while(match(pr, TOKEN_OR)) {
+        conjunction(pr, box);
+        box_code_write(box, OP_OR);
     }
 }
 

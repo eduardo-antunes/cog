@@ -29,12 +29,21 @@
 #include "value.h"
 
 typedef enum {
+    // Arithmetic
     OP_NEG,
     OP_ADD,
     OP_SUB,
     OP_MUL,
     OP_DIV,
 
+    // Logic
+    OP_NOT,
+    OP_AND,
+    OP_OR,
+
+    // Constant loading
+    OP_TRUE,
+    OP_FALSE,
     OP_PUSH,
 } Op_code;
 

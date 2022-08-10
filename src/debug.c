@@ -36,7 +36,6 @@ void disassemble(const Box *box)
             case OP_NEG:
                 printf("neg\n");
                 break;
-
             case OP_ADD:
                 printf("add\n");
                 break;
@@ -50,6 +49,22 @@ void disassemble(const Box *box)
                 printf("div\n");
                 break;
 
+            case OP_NOT:
+                printf("not\n");
+                break;
+            case OP_AND:
+                printf("and\n");
+                break;
+            case OP_OR:
+                printf("or\n");
+                break;
+
+            case OP_TRUE:
+                printf("push true\n");
+                break;
+            case OP_FALSE:
+                printf("push false\n");
+                break;
             case OP_PUSH:
                 ind = box->code[++i];
                 val = box->constants.val[ind];
