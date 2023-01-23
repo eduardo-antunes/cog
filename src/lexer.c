@@ -29,20 +29,17 @@
 
 #define END '\0'
 
-static bool is_alpha(char ch)
-{
+static bool is_alpha(char ch) {
     return (ch >= 'a' && ch <= 'z') 
         || (ch >= 'A' && ch <= 'Z')
         || ch == '_';
 }
 
-static bool is_digit(char ch)
-{
+static bool is_digit(char ch) {
     return ch >= '0' && ch <= '9';
 }
 
-static bool is_space(char ch)
-{
+static bool is_space(char ch) {
     return ch == ' ' 
         || ch == '\n' 
         || ch == '\r' 
@@ -52,19 +49,16 @@ static bool is_space(char ch)
 
 // Core functions -------------------------------------------------
 
-static char advance(Lexer *lex)
-{
+static char advance(Lexer *lex) {
     ++lex->current;
     return lex->current[-1];
 }
 
-static char peek(Lexer *lex)
-{
+static char peek(Lexer *lex) {
     return lex->current[0];
 }
 
-static Token make_token(Lexer *lex, Token_t type)
-{
+static Token make_tok(Lexer *lex, Token_t type) {
     Token tok;
     tok.start = lex->start;
     tok.offset = lex->current - lex->start;
@@ -73,8 +67,7 @@ static Token make_token(Lexer *lex, Token_t type)
     return tok;
 }
 
-static Token lex_error(Lexer *lex, const char *msg)
-{
+static Token make_err_tok(Lexer *lex, const char *msg) {
     Token err;
     err.type = TOKEN_ERR;
     err.line = lex->line;
@@ -85,8 +78,7 @@ static Token lex_error(Lexer *lex, const char *msg)
 
 // Especialized lexing functions ----------------------------------
 
-static Token number_tok(Lexer *lex)
-{
+static Token make_num_tok(Lexer *lex) {
     // integer part
     while(is_digit(peek(lex))) advance(lex);
 
@@ -97,12 +89,11 @@ static Token number_tok(Lexer *lex)
             advance(lex);
     }
 
-    return make_token(lex, TOKEN_NUM);
+    return make_tok(lex, TOKEN_NUM);
 }
 
 static Token_t check_keyword(Lexer *lex, int start, 
-        int length, const char *rest, Token_t type)
-{
+        int length, const char *rest, Token_t type) {
     // Credits for this function go to Bob Nystrom.
     // This is just so straightforward, I had to use it.
     if(lex->current - lex->start == start + length &&
@@ -112,8 +103,7 @@ static Token_t check_keyword(Lexer *lex, int start,
     return TOKEN_ID;
 }
 
-static Token_t identifier_type(Lexer *lex)
-{
+static Token_t identifier_type(Lexer *lex) {
     switch(lex->start[0]) {
         case 'a':
             // and
@@ -135,8 +125,7 @@ static Token_t identifier_type(Lexer *lex)
     return TOKEN_ID;
 }
 
-static Token identifier_tok(Lexer *lex)
-{
+static Token make_id_tok(Lexer *lex) {
     // We've already consumed the first character, so
     // the rest can be digits, no problem.
     while(is_alpha(peek(lex)) || is_digit(peek(lex))) 
@@ -145,11 +134,10 @@ static Token identifier_tok(Lexer *lex)
     // Keywords fit the same structure as identifiers,
     // so what we've just read might be one. We use
     // identifier_type to account for that.
-    return make_token(lex, identifier_type(lex));
+    return make_tok(lex, identifier_type(lex));
 }
 
-static void ignore_whitespace(Lexer *lex)
-{
+static void skip_whitespace(Lexer *lex) {
     char ch;
     while(is_space(peek(lex)) || peek(lex) == '#') {
         ch = advance(lex);
@@ -172,35 +160,29 @@ static void ignore_whitespace(Lexer *lex)
 
 // Public interface -----------------------------------------------
 
-void lexer_init(Lexer *lex, const char *source)
-{
+void lexer_init(Lexer *lex, const char *source) {
     lex->start = source;
     lex->current = source;
     lex->line = 1;
 }
 
-Token get_token(Lexer *lex)
-{
-    ignore_whitespace(lex);
+Token lexer_get_tok(Lexer *lex) {
+    skip_whitespace(lex);
     lex->start = lex->current;
-
     char ch = advance(lex);
 
     switch(ch) {
-        case '+': return make_token(lex, TOKEN_PLUS);
-        case '-': return make_token(lex, TOKEN_MINUS);
-        case '*': return make_token(lex, TOKEN_STAR);
-        case '/': return make_token(lex, TOKEN_SLASH);
-        case '(': return make_token(lex, TOKEN_OPEN_PAREN);
-        case ')': return make_token(lex, TOKEN_CLOSE_PAREN);
-        case END: return make_token(lex, TOKEN_END);
+        case '+': return make_tok(lex, TOKEN_PLUS);
+        case '-': return make_tok(lex, TOKEN_MINUS);
+        case '*': return make_tok(lex, TOKEN_STAR);
+        case '/': return make_tok(lex, TOKEN_SLASH);
+        case '(': return make_tok(lex, TOKEN_OPEN_PAREN);
+        case ')': return make_tok(lex, TOKEN_CLOSE_PAREN);
+        case END: return make_tok(lex, TOKEN_END);
     }
 
-    if(is_alpha(ch)) 
-        return identifier_tok(lex);
+    if(is_alpha(ch)) return make_id_tok(lex);
+    if(is_digit(ch)) return make_num_tok(lex);
 
-    if(is_digit(ch)) 
-        return number_tok(lex);
-
-    return lex_error(lex, "Unrecognized char");
+    return make_err_tok(lex, "Unrecognized char");
 }

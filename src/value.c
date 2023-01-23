@@ -25,16 +25,14 @@
 #include "common.h"
 #include "value.h"
 
-void vector_init(Cog_vector *v)
-{
+void vector_init(Cog_vector *v) {
     v->val = (Cog_val*) malloc(sizeof(Cog_val) *
             COG_VECTOR_INITIAL_CAPACITY);
     v->capacity = COG_VECTOR_INITIAL_CAPACITY;
     v->count = 0;
 }
 
-void vector_push(Cog_vector *v, Cog_val val)
-{
+void vector_push(Cog_vector *v, Cog_val val) {
     if(v->count + 1 < v->capacity) {
         v->capacity *= COG_VECTOR_GROWTH_FACTOR;
         v->val = realloc(v->val, v->capacity);
@@ -43,8 +41,7 @@ void vector_push(Cog_vector *v, Cog_val val)
     v->count++;
 }
 
-Cog_val vector_get(const Cog_vector *v, unsigned int index)
-{
+Cog_val vector_get(const Cog_vector *v, unsigned int index) {
     if(index >= v->count) {
         // TODO: signal an error somehow
         return 0;
@@ -52,13 +49,11 @@ Cog_val vector_get(const Cog_vector *v, unsigned int index)
     return v->val[index];
 }
 
-Cog_val vector_pop(Cog_vector *v)
-{
+Cog_val vector_pop(Cog_vector *v) {
     return v->val[--v->count];
 }
 
-void vector_free(Cog_vector *v)
-{
+void vector_free(Cog_vector *v) {
     free(v->val);
     v->capacity = 0;
     v->count = 0;

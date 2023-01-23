@@ -31,8 +31,7 @@
 
 // Error reporting functions --------------------------------------
 
-static void error_at(Token *tok, const char *msg)
-{
+static void error_at(Token *tok, const char *msg) {
     eprintf("Error at ");
     switch(tok->type) {
         case TOKEN_END:
@@ -43,8 +42,7 @@ static void error_at(Token *tok, const char *msg)
     }
 }
 
-static void error(Parser *pr, const char *format, ...)
-{
+static void error(Parser *pr, const char *format, ...) {
     // Ignore errors when panicking
     if(pr->panic) return;
 
@@ -63,20 +61,17 @@ static void error(Parser *pr, const char *format, ...)
 
 // Core functions -------------------------------------------------
 
-static void advance(Parser *pr)
-{
+static void advance(Parser *pr) {
     pr->prev = pr->current;
-
     // Report error tokens
     while(true) {
-        pr->current = get_token(&pr->lex);
+        pr->current = lexer_get_tok(&pr->lex);
         if(pr->current.type != TOKEN_ERR) break;
         error(pr, pr->current.start);
     }
 }
 
-static bool match(Parser *pr, Token_t type)
-{
+static bool match(Parser *pr, Token_t type) {
     if(pr->current.type == type) {
         advance(pr);
         return true;
@@ -84,23 +79,20 @@ static bool match(Parser *pr, Token_t type)
     return false;
 }
 
-static void expect(Parser *pr, Token_t type)
-{
+static void expect(Parser *pr, Token_t type) {
     if(!match(pr, type))
         error(pr, "expected token of type %d", type);
 }
 
 // Parsing functions ----------------------------------------------
 
-DEF_PARSE(disjunction);
+static void disjunction(Parser *pr, Box *box);
 
-DEF_PARSE(expression)
-{
-    disjunction(pr, box);
+static void expression(Parser *pr, Box *box) { 
+    disjunction(pr, box); 
 }
 
-DEF_PARSE(primary)
-{
+static void primary(Parser *pr, Box *box) {
     switch(pr->current.type) {
         case TOKEN_NUM:
             advance(pr);
@@ -131,8 +123,7 @@ DEF_PARSE(primary)
     }
 }
 
-DEF_PARSE(unary)
-{
+static void unary(Parser *pr, Box *box) {
     switch(pr->current.type) {
         case TOKEN_MINUS:
             advance(pr);
@@ -152,11 +143,9 @@ DEF_PARSE(unary)
     primary(pr, box);
 }
 
-DEF_PARSE(factor)
-{
-    unary(pr, box);
-
+static void factor(Parser *pr, Box *box) {
     Op_code op;
+    unary(pr, box);
     while(match(pr, TOKEN_STAR) || match(pr, TOKEN_SLASH)) {
         switch(pr->prev.type) {
             case TOKEN_STAR:
@@ -173,11 +162,9 @@ DEF_PARSE(factor)
     }
 }
 
-DEF_PARSE(term)
-{
-    factor(pr, box);
-
+static void term(Parser *pr, Box *box) {
     Op_code op;
+    factor(pr, box);
     while(match(pr, TOKEN_PLUS) || match(pr, TOKEN_MINUS)) {
         switch(pr->prev.type) {
             case TOKEN_PLUS:
@@ -194,8 +181,7 @@ DEF_PARSE(term)
     }
 }
 
-DEF_PARSE(conjunction)
-{
+static void conjunction(Parser *pr, Box *box) {
     term(pr, box);
     while(match(pr, TOKEN_AND)) {
         term(pr, box);
@@ -203,8 +189,7 @@ DEF_PARSE(conjunction)
     }
 }
 
-DEF_PARSE(disjunction)
-{
+static void disjunction(Parser *pr, Box *box) {
     conjunction(pr, box);
     while(match(pr, TOKEN_OR)) {
         conjunction(pr, box);
@@ -214,15 +199,13 @@ DEF_PARSE(disjunction)
 
 // Public interface -----------------------------------------------
 
-void parser_init(Parser *pr, const char *source)
-{
+void parser_init(Parser *pr, const char *source) {
     pr->panic = false;
     pr->had_error = false;
     lexer_init(&pr->lex, source);
 }
 
-bool parse(Parser *pr, Box *box)
-{
+bool parse(Parser *pr, Box *box) {
     advance(pr);
     expression(pr, box);
     return !pr->had_error;

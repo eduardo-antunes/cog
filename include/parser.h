@@ -25,12 +25,9 @@
 #ifndef COG_PARSER_H
 #define COG_PARSER_H
 
+#include "box.h"
 #include "common.h"
 #include "lexer.h"
-#include "box.h"
-
-#define DEF_PARSE(fn) \
-    static void fn(Parser *pr, Box *box)
 
 typedef struct {
     Token current;

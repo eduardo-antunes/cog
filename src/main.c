@@ -24,15 +24,14 @@
 
 #include <stdio.h>
 
-#include "lexer.h"
-#include "common.h"
-#include "parser.h"
-#include "debug.h"
 #include "box.h"
+#include "common.h"
+#include "debug.h"
+#include "lexer.h"
+#include "parser.h"
 #include "vm.h"
 
-int main()
-{
+int main(void) {
     char expr[1024];
     fgets(expr, 1024, stdin);
 
@@ -42,7 +41,7 @@ int main()
     box_init(&box);
     bool alright = parse(&pr, &box);
 
-    if(alright) disassemble(&box);
+    if(alright) execute(&box);
     box_free(&box);
 
     return 0;

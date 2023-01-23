@@ -22,12 +22,11 @@
 
 #include <stdlib.h>
 
-#include "common.h"
 #include "box.h"
+#include "common.h"
 #include "value.h"
 
-void box_init(Box *b)
-{
+void box_init(Box *b) {
     b->count = 0;
     b->capacity = BOX_CODE_INITIAL_CAPACITY;
     b->code = (uint8_t*) malloc(sizeof(uint8_t) *
@@ -35,8 +34,8 @@ void box_init(Box *b)
     vector_init(&b->constants);
 }
 
-void box_code_write(Box *b, uint8_t byte)
-{
+void box_code_write(Box *b, uint8_t byte) {
+    // TODO Really gotta improve this
     if(b->count + 1 > b->capacity) {
         b->capacity *= BOX_CODE_GROWTH_FACTOR;
         b->code = realloc(b->code, b->capacity);
@@ -44,16 +43,13 @@ void box_code_write(Box *b, uint8_t byte)
     b->code[b->count++] = byte;
 }
 
-uint8_t box_value_write(Box *b, Cog_val val)
-{
+uint8_t box_value_write(Box *b, Cog_val val) {
     vector_push(&b->constants, val);
     return b->constants.count - 1;
 }
 
-void box_free(Box *b)
-{
-    b->count = 0;
-    b->capacity = 0;
+void box_free(Box *b) {
     free(b->code);
     vector_free(&b->constants);
+    b->capacity = b->count = 0;
 }

@@ -66,6 +66,6 @@ typedef struct {
 void lexer_init(Lexer *lex, const char *source);
 
 // Yield a single token from source
-Token get_token(Lexer *lex);
+Token lexer_get_tok(Lexer *lex);
 
 #endif // COG_LEXER_H

@@ -28,6 +28,6 @@
 #include <stdint.h>
 
 #define eprintf(...) \
-    printf(__VA_ARGS__)
+    fprintf(stderr, __VA_ARGS__)
 
 #endif // COG_COMMON_H

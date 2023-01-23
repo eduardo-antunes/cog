@@ -20,18 +20,16 @@
    <https://www.gnu.org/licenses/>.
 */
 
+#include "box.h"
 #include "common.h"
 #include "value.h"
-#include "box.h"
 #include "vm.h"
 
-Cog_val execute(Box *box)
-{
+Cog_val execute(Box *box) {
     uint8_t ind;
     Cog_val x, y;
     Cog_vector vec;
     vector_init(&vec);
-
     for(unsigned i = 0; i < box->count; ++i) {
         switch(box->code[i]) {
             // Unary operations
@@ -70,6 +68,5 @@ Cog_val execute(Box *box)
                 break;
         }
     }
-
     return vector_pop(&vec);
 }

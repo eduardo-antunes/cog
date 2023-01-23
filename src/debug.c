@@ -27,8 +27,7 @@
 #include "debug.h"
 #include "value.h"
 
-void disassemble(const Box *box)
-{
+void disassemble(const Box *box) {
     uint8_t ind;
     Cog_val val;
     for(unsigned i = 0; i < box->count; ++i) {
