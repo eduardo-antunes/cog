@@ -10,6 +10,7 @@ DEBUG  := -ggdb
 
 TARGET := cog
 SRCDIR := src
+INCDIR := include
 OBJDIR := obj
 
 SRCFILES := $(wildcard $(SRCDIR)/*.c)
@@ -26,10 +27,10 @@ $(TARGET): $(OBJFILES)
 	$(LINKER) $^ -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) $(CFLAGS) $(DEBUG) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEBUG) -I $(INCDIR) -c $< -o $@
 
 $(OBJDIR)/%.dat: $(SRCDIR)/%.c
-	$(CC) -MM $< > $@
+	$(CC) -I $(INCDIR) -MM $< > $@
 
 -include $(DEPFILES)
 
@@ -37,4 +38,4 @@ clean:
 	$(RM) $(TARGET) $(OBJDIR)/*
 
 setup:
-	mkdir $(OBJDIR)
+	mkdir $(SRCDIR) $(OBJDIR) $(INCDIR)
