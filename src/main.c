@@ -33,16 +33,20 @@
 
 int main(void) {
     char expr[1024];
-    fgets(expr, 1024, stdin);
-
-    Parser pr;
-    parser_init(&pr, expr);
-    Box box;
-    box_init(&box);
-    bool alright = parse(&pr, &box);
-
-    if(alright) execute(&box);
-    box_free(&box);
-
+    Cog_vm vm;
+    vm_start(&vm);
+    while(fgets(expr, 1024, stdin) != NULL) {
+        Parser pr;
+        parser_init(&pr, expr);
+        Box box;
+        box_init(&box);
+        bool alright = parse(&pr, &box);
+        if(alright) {
+            Cog_value res = vm_execute(&vm, &box);
+            printf("=> %g\n", TO_NUM(res));
+        }
+        box_free(&box);
+    }
+    vm_end(&vm);
     return 0;
 }

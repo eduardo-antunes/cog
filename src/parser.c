@@ -24,50 +24,36 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "common.h"
-#include "parser.h"
-#include "lexer.h"
 #include "box.h"
+#include "common.h"
+#include "lexer.h"
+#include "parser.h"
 
-// Error reporting functions --------------------------------------
+// Error reporting
 
-static void error_at(Token *tok, const char *msg) {
-    eprintf("Error at ");
-    switch(tok->type) {
-        case TOKEN_END:
-            eprintf("end: %s\n", msg);
-            break;
-        default:
-            eprintf("line %d: %s\n", tok->line, msg);
-    }
-}
-
-static void error(Parser *pr, const char *format, ...) {
-    // Ignore errors when panicking
-    if(pr->panic) return;
-
-    // Format error message
-    char msg[32];
+static void parse_error(Parser *pr, const char *format, ...) {
+    if(pr->panic) return; // ignore errors on panic mode
+    // show error message
     va_list args;
     va_start(args, format);
-    vsnprintf(msg, 32, format, args);
+    vfprintf(stderr, format, args);
     va_end(args);
-
-    // Report error and set error flags
-    error_at(&pr->current, msg);
-    pr->had_error = true;
-    pr->panic = true;
+    // provide location information
+    if(pr->current.type == TOKEN_END)
+        eprintf(" (END)\n");
+    else
+        eprintf(" (line %d)\n", pr->current.line);
 }
 
-// Core functions -------------------------------------------------
+// Core functions
 
 static void advance(Parser *pr) {
     pr->prev = pr->current;
-    // Report error tokens
+    // report bad tokens
     while(true) {
         pr->current = lexer_get_tok(&pr->lex);
         if(pr->current.type != TOKEN_ERR) break;
-        error(pr, pr->current.start);
+        parse_error(pr, pr->current.start);
     }
 }
 
@@ -81,23 +67,23 @@ static bool match(Parser *pr, Token_t type) {
 
 static void expect(Parser *pr, Token_t type) {
     if(!match(pr, type))
-        error(pr, "expected token of type %d", type);
+        parse_error(pr, "expected token of type %d", type);
 }
 
-// Parsing functions ----------------------------------------------
+// Parsing functions
 
-static void disjunction(Parser *pr, Box *box);
+static void parse_disj(Parser *pr, Box *box);
 
-static void expression(Parser *pr, Box *box) { 
-    disjunction(pr, box); 
+static void parse_expr(Parser *pr, Box *box) { 
+    parse_disj(pr, box); 
 }
 
-static void primary(Parser *pr, Box *box) {
+static void parse_value(Parser *pr, Box *box) {
     switch(pr->current.type) {
         case TOKEN_NUM:
             advance(pr);
             double val = strtod(pr->prev.start, NULL);
-            uint8_t i = box_value_write(box, val);
+            uint8_t i = box_value_write(box, COG_NUM(val));
             box_code_write(box, OP_PUSH);
             box_code_write(box, i);
             break;
@@ -112,40 +98,40 @@ static void primary(Parser *pr, Box *box) {
             box_code_write(box, OP_FALSE);
             break;
 
-        case TOKEN_OPEN_PAREN:
+        case TOKEN_OPEN_PAREN: // parenthesized expression
             advance(pr);
-            expression(pr, box);
+            parse_expr(pr, box);
             expect(pr, TOKEN_CLOSE_PAREN);
             break;
 
         default:
-            error(pr, "unexpected EOF");
+            parse_error(pr, "Missing operand");
     }
 }
 
-static void unary(Parser *pr, Box *box) {
+static void parse_unary(Parser *pr, Box *box) {
     switch(pr->current.type) {
         case TOKEN_MINUS:
             advance(pr);
             box_code_write(box, OP_NEG);
-            unary(pr, box);
+            parse_unary(pr, box);
             break;
 
         case TOKEN_NOT:
             advance(pr);
             box_code_write(box, OP_NOT);
-            unary(pr, box);
+            parse_unary(pr, box);
             break;
 
         default:
             break;
     }
-    primary(pr, box);
+    parse_value(pr, box);
 }
 
-static void factor(Parser *pr, Box *box) {
+static void parse_prod(Parser *pr, Box *box) {
     Op_code op;
-    unary(pr, box);
+    parse_unary(pr, box);
     while(match(pr, TOKEN_STAR) || match(pr, TOKEN_SLASH)) {
         switch(pr->prev.type) {
             case TOKEN_STAR:
@@ -157,14 +143,14 @@ static void factor(Parser *pr, Box *box) {
             default:
                 break;
         }
-        unary(pr, box);
+        parse_unary(pr, box);
         box_code_write(box, op);
     }
 }
 
-static void term(Parser *pr, Box *box) {
+static void parse_sum(Parser *pr, Box *box) {
     Op_code op;
-    factor(pr, box);
+    parse_prod(pr, box);
     while(match(pr, TOKEN_PLUS) || match(pr, TOKEN_MINUS)) {
         switch(pr->prev.type) {
             case TOKEN_PLUS:
@@ -176,28 +162,28 @@ static void term(Parser *pr, Box *box) {
             default:
                 break;
         }
-        factor(pr, box);
+        parse_prod(pr, box);
         box_code_write(box, op);
     }
 }
 
-static void conjunction(Parser *pr, Box *box) {
-    term(pr, box);
+static void parse_conj(Parser *pr, Box *box) {
+    parse_sum(pr, box);
     while(match(pr, TOKEN_AND)) {
-        term(pr, box);
+        parse_sum(pr, box);
         box_code_write(box, OP_AND);
     }
 }
 
-static void disjunction(Parser *pr, Box *box) {
-    conjunction(pr, box);
+static void parse_disj(Parser *pr, Box *box) {
+    parse_conj(pr, box);
     while(match(pr, TOKEN_OR)) {
-        conjunction(pr, box);
+        parse_conj(pr, box);
         box_code_write(box, OP_OR);
     }
 }
 
-// Public interface -----------------------------------------------
+// Public interface
 
 void parser_init(Parser *pr, const char *source) {
     pr->panic = false;
@@ -207,6 +193,6 @@ void parser_init(Parser *pr, const char *source) {
 
 bool parse(Parser *pr, Box *box) {
     advance(pr);
-    expression(pr, box);
+    parse_expr(pr, box);
     return !pr->had_error;
 }

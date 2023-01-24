@@ -25,7 +25,7 @@
 #include "common.h"
 #include "lexer.h"
 
-// Utility functions and definitions ------------------------------
+// Core functions and definitions
 
 #define END '\0'
 
@@ -47,8 +47,6 @@ static bool is_space(char ch) {
         || ch == '\v';
 }
 
-// Core functions -------------------------------------------------
-
 static char advance(Lexer *lex) {
     ++lex->current;
     return lex->current[-1];
@@ -58,32 +56,35 @@ static char peek(Lexer *lex) {
     return lex->current[0];
 }
 
+static char peek_next(Lexer *lex) {
+    return lex->current[1];
+}
+
+// Lexing functions
+
 static Token make_tok(Lexer *lex, Token_t type) {
     Token tok;
+    tok.type = type;
     tok.start = lex->start;
     tok.offset = lex->current - lex->start;
     tok.line = lex->line;
-    tok.type = type;
     return tok;
 }
 
-static Token make_err_tok(Lexer *lex, const char *msg) {
+static Token make_err_tok(Lexer *lex, const char *text) {
     Token err;
     err.type = TOKEN_ERR;
+    err.start = text;
+    err.offset = strlen(text);
     err.line = lex->line;
-    err.start = msg;
-    err.offset = strlen(msg);
     return err;
 }
 
-// Especialized lexing functions ----------------------------------
-
 static Token make_num_tok(Lexer *lex) {
-    // integer part
-    while(is_digit(peek(lex))) advance(lex);
+    while(is_digit(peek(lex))) // integer part
+        advance(lex);
 
-    // decimal part
-    if(peek(lex) == '.') {
+    if(peek(lex) == '.') { // fractional part
         advance(lex);
         while(is_digit(peek(lex)))
             advance(lex);
@@ -95,46 +96,30 @@ static Token make_num_tok(Lexer *lex) {
 static Token_t check_keyword(Lexer *lex, int start, 
         int length, const char *rest, Token_t type) {
     // Credits for this function go to Bob Nystrom.
-    // This is just so straightforward, I had to use it.
+    // This is just so straightforward, I had to borrow it.
     if(lex->current - lex->start == start + length &&
             memcmp(lex->start + start, rest, length) == 0)
         return type;
-
     return TOKEN_ID;
 }
 
-static Token_t identifier_type(Lexer *lex) {
+static Token_t id_type(Lexer *lex) {
     switch(lex->start[0]) {
-        case 'a':
-            // and
-            return check_keyword(lex, 1, 2, "nd", TOKEN_AND);
-        case 'f':
-            // false
-            return check_keyword(lex, 1, 4, "alse", TOKEN_FALSE);
-        case 'o':
-            // or
-            return check_keyword(lex, 1, 1, "r", TOKEN_OR);
-        case 'n':
-            // not
-            return check_keyword(lex, 1, 2, "ot", TOKEN_NOT);
-        case 't':
-            // true
-            return check_keyword(lex, 1, 3, "rue", TOKEN_TRUE);
+        case 'a': return check_keyword(lex, 1, 2, "nd",   TOKEN_AND);
+        case 'f': return check_keyword(lex, 1, 4, "alse", TOKEN_FALSE);
+        case 'o': return check_keyword(lex, 1, 1, "r",    TOKEN_OR);
+        case 'n': return check_keyword(lex, 1, 2, "ot",   TOKEN_NOT);
+        case 't': return check_keyword(lex, 1, 3, "rue",  TOKEN_TRUE);
     }
-
     return TOKEN_ID;
 }
 
 static Token make_id_tok(Lexer *lex) {
-    // We've already consumed the first character, so
-    // the rest can be digits, no problem.
+    // here we've already consumed the first character
     while(is_alpha(peek(lex)) || is_digit(peek(lex))) 
         advance(lex);
-
-    // Keywords fit the same structure as identifiers,
-    // so what we've just read might be one. We use
-    // identifier_type to account for that.
-    return make_tok(lex, identifier_type(lex));
+    // the identifier might be a keyword
+    return make_tok(lex, id_type(lex));
 }
 
 static void skip_whitespace(Lexer *lex) {
@@ -151,14 +136,15 @@ static void skip_whitespace(Lexer *lex) {
                 ++lex->line;
                 break;
             case '#':
-                while(peek(lex) != '\n' && peek(lex) != '\r')
+                while(peek(lex) != '\n' 
+                        || (peek(lex) != '\r' && peek_next(lex) != '\n'))
                     advance(lex);
                 break;
         }
     }
 }
 
-// Public interface -----------------------------------------------
+// Public interface
 
 void lexer_init(Lexer *lex, const char *source) {
     lex->start = source;

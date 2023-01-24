@@ -26,6 +26,18 @@
 #include "box.h"
 #include "value.h"
 
-Cog_val execute(Box *box);
+typedef enum {
+    R_OK,
+    R_ERR_TYPE,
+} Result;
+
+typedef struct {
+    Cog_array stack;
+} Cog_vm;
+
+void vm_start(Cog_vm *vm);
+void vm_end(Cog_vm *vm);
+
+Cog_value vm_execute(Cog_vm *vm, Box *box);
 
 #endif // COG_VM_H

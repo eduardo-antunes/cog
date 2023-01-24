@@ -25,48 +25,104 @@
 #include "value.h"
 #include "vm.h"
 
-Cog_val execute(Box *box) {
-    uint8_t ind;
-    Cog_val x, y;
-    Cog_vector vec;
-    vector_init(&vec);
+// Runtime operations
+
+static Result vm_neg(Cog_vm *vm) {
+    Cog_value v = cog_array_pop(&vm->stack);
+    if(!IS_NUM(v)) 
+        return R_ERR_TYPE;
+
+    double x = TO_NUM(v);
+    cog_array_push(&vm->stack, COG_NUM(-x));
+    return R_OK;
+}
+
+static Result vm_add(Cog_vm *vm) {
+    Cog_value v2 = cog_array_pop(&vm->stack);
+    Cog_value v1 = cog_array_pop(&vm->stack);
+    if(!IS_NUM(v1) || !IS_NUM(v2)) 
+        return R_ERR_TYPE;
+
+    double x = TO_NUM(v1), y = TO_NUM(v2);
+    cog_array_push(&vm->stack, COG_NUM(x + y));
+    return R_OK;
+}
+
+static Result vm_sub(Cog_vm *vm) {
+    Cog_value v2 = cog_array_pop(&vm->stack);
+    Cog_value v1 = cog_array_pop(&vm->stack);
+    if(!IS_NUM(v1) || !IS_NUM(v2)) 
+        return R_ERR_TYPE;
+
+    double x = TO_NUM(v1), y = TO_NUM(v2);
+    cog_array_push(&vm->stack, COG_NUM(x - y));
+    return R_OK;
+}
+
+static Result vm_mul(Cog_vm *vm) {
+    Cog_value v2 = cog_array_pop(&vm->stack);
+    Cog_value v1 = cog_array_pop(&vm->stack);
+    if(!IS_NUM(v1) || !IS_NUM(v2)) 
+        return R_ERR_TYPE;
+
+    double x = TO_NUM(v1), y = TO_NUM(v2);
+    cog_array_push(&vm->stack, COG_NUM(x * y));
+    return R_OK;
+}
+
+static Result vm_div(Cog_vm *vm) {
+    Cog_value v2 = cog_array_pop(&vm->stack);
+    Cog_value v1 = cog_array_pop(&vm->stack);
+    if(!IS_NUM(v1) || !IS_NUM(v2)) 
+        return R_ERR_TYPE;
+
+    double x = TO_NUM(v1), y = TO_NUM(v2);
+    cog_array_push(&vm->stack, COG_NUM(x / y));
+    return R_OK;
+}
+
+// Public interface
+
+void vm_start(Cog_vm *vm) {
+    cog_array_init(&vm->stack);
+}
+
+void vm_end(Cog_vm *vm) {
+    cog_array_free(&vm->stack);
+}
+
+Cog_value vm_execute(Cog_vm *vm, Box *box) {
+    uint8_t addr;
+    cog_array_init(&vm->stack);
     for(unsigned i = 0; i < box->count; ++i) {
         switch(box->code[i]) {
-            // Unary operations
             case OP_NEG:
-                x = vector_pop(&vec);
-                vector_push(&vec, -x);
+                vm_neg(vm);
                 break;
-
-            // Binary operations
             case OP_ADD:
-                y = vector_pop(&vec);
-                x = vector_pop(&vec);
-                vector_push(&vec, x + y);
+                vm_add(vm);
                 break;
             case OP_SUB:
-                y = vector_pop(&vec);
-                x = vector_pop(&vec);
-                vector_push(&vec, x - y);
+                vm_sub(vm);
                 break;
             case OP_MUL:
-                y = vector_pop(&vec);
-                x = vector_pop(&vec);
-                vector_push(&vec, x * y);
+                vm_mul(vm);
                 break;
             case OP_DIV:
-                y = vector_pop(&vec);
-                x = vector_pop(&vec);
-                vector_push(&vec, x / y);
+                vm_div(vm);
                 break;
 
-            // Constant loading operations
+            // Loading operations
             case OP_PUSH:
-                ind = box->code[++i];
-                Cog_val val = vector_get(&box->constants, ind);
-                vector_push(&vec, val);
+                addr = box->code[++i];
+                Cog_value v = cog_array_get(&box->constants, addr);
+                cog_array_push(&vm->stack, v);
+                break;
+
+            // Others
+            case OP_RETURN:
                 break;
         }
     }
-    return vector_pop(&vec);
+    return cog_array_pop(&vm->stack);
 }

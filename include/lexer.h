@@ -20,8 +20,6 @@
    <https://www.gnu.org/licenses/>.
 */
 
-// Lexing analysis component of cog
-
 #ifndef COG_LEXER_H
 #define COG_LEXER_H
 
@@ -32,7 +30,14 @@ typedef struct {
 } Lexer;
 
 typedef enum {
-    // 1 character:
+    // Keywords
+    TOKEN_TRUE,
+    TOKEN_FALSE,
+    TOKEN_NOT,
+    TOKEN_AND,
+    TOKEN_OR,
+
+    // Operators
     TOKEN_PLUS,
     TOKEN_MINUS,
     TOKEN_STAR,
@@ -40,32 +45,24 @@ typedef enum {
     TOKEN_OPEN_PAREN,
     TOKEN_CLOSE_PAREN,
 
-    TOKEN_TRUE,
-    TOKEN_FALSE,
-    TOKEN_NOT,
-    TOKEN_AND,
-    TOKEN_OR,
-
-    // n characters:
+    // Values
     TOKEN_NUM,
     TOKEN_ID,
 
-    // Special:
+    // Special
     TOKEN_ERR,
     TOKEN_END,
 } Token_t;
 
 typedef struct {
-    const char *start;
     Token_t type;
+    const char *start;
     int offset;
     int line;
 } Token;
 
-// Initialize the lexer
 void lexer_init(Lexer *lex, const char *source);
 
-// Yield a single token from source
 Token lexer_get_tok(Lexer *lex);
 
 #endif // COG_LEXER_H

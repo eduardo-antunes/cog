@@ -29,22 +29,21 @@
 #include "value.h"
 
 typedef enum {
-    // Arithmetic
     OP_NEG,
     OP_ADD,
     OP_SUB,
     OP_MUL,
     OP_DIV,
 
-    // Logic
     OP_NOT,
     OP_AND,
     OP_OR,
 
-    // Constant loading
     OP_TRUE,
     OP_FALSE,
     OP_PUSH,
+
+    OP_RETURN,
 } Op_code;
 
 #define BOX_CODE_INITIAL_CAPACITY 10
@@ -54,14 +53,14 @@ typedef struct {
     uint8_t *code;
     unsigned count;
     unsigned capacity;
-    Cog_vector constants;
+    Cog_array constants;
 } Box;
 
 void box_init(Box *b);
 
 void box_code_write(Box *b, uint8_t byte);
 
-uint8_t box_value_write(Box *b, Cog_val val);
+uint8_t box_value_write(Box *b, Cog_value val);
 
 void box_free(Box *b);
 

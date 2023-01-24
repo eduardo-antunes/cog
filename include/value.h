@@ -20,30 +20,56 @@
    <https://www.gnu.org/licenses/>.
 */
 
+// Cog values and data structures, featuring dynamic typing
+
 #ifndef COG_VALUE_H
 #define COG_VALUE_H
 
 #include "common.h"
 
-typedef double Cog_val; // temp
-
-#define COG_VECTOR_INITIAL_CAPACITY 10
-#define COG_VECTOR_GROWTH_FACTOR 2
+typedef enum {
+    COG_NUMBER,
+    COG_BOOLEAN,
+} Cog_type;
 
 typedef struct {
-    Cog_val *val;
+    union {
+        double number;
+        bool boolean;
+    } as;
+    Cog_type type;
+} Cog_value;
+
+#define COG_NUM(x)  ((Cog_value) { {.number = (x)},  COG_NUMBER  })
+#define COG_BOOL(b) ((Cog_value) { {.boolean = (b)}, COG_BOOLEAN })
+
+#define TO_NUM(cog_val) ((cog_val).as.number)
+#define TO_BOOL(cog_val) ((cog_val).as.boolean)
+
+#define IS_NUM(cog_val) ((cog_val).type == COG_NUMBER)
+#define IS_BOOL(cog_val) ((cog_val).type == COG_BOOLEAN)
+
+void cog_value_print(Cog_value val);
+
+// Basic dynamic array
+
+#define COG_ARRAY_INITIAL_CAPACITY 10
+#define COG_ARRAY_GROWTH_FACTOR 2
+
+typedef struct {
+    Cog_value *p;
     unsigned count;
     unsigned capacity;
-} Cog_vector;
+} Cog_array;
 
-void vector_init(Cog_vector *v);
+void cog_array_init(Cog_array *arr);
 
-void vector_push(Cog_vector *v, Cog_val val);
+void cog_array_push(Cog_array *arr, Cog_value val);
 
-Cog_val vector_get(const Cog_vector *v, unsigned index);
+Cog_value cog_array_get(const Cog_array *arr, unsigned index);
 
-Cog_val vector_pop(Cog_vector *v);
+Cog_value cog_array_pop(Cog_array *arr);
 
-void vector_free(Cog_vector *v);
+void cog_array_free(Cog_array *arr);
 
 #endif // COG_VALUE_H

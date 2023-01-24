@@ -28,8 +28,8 @@
 #include "value.h"
 
 void disassemble(const Box *box) {
-    uint8_t ind;
-    Cog_val val;
+    uint8_t addr;
+    Cog_value v;
     for(unsigned i = 0; i < box->count; ++i) {
         switch(box->code[i]) {
             case OP_NEG:
@@ -65,9 +65,10 @@ void disassemble(const Box *box) {
                 printf("push false\n");
                 break;
             case OP_PUSH:
-                ind = box->code[++i];
-                val = box->constants.val[ind];
-                printf("push %g\n", val);
+                addr = box->code[++i];
+                v = box->constants.p[addr];
+                cog_value_print(v);
+                printf("\n");
                 break;
         }
     }

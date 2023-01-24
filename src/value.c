@@ -20,41 +20,55 @@
    <https://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "common.h"
 #include "value.h"
 
-void vector_init(Cog_vector *v) {
-    v->val = (Cog_val*) malloc(sizeof(Cog_val) *
-            COG_VECTOR_INITIAL_CAPACITY);
-    v->capacity = COG_VECTOR_INITIAL_CAPACITY;
-    v->count = 0;
-}
-
-void vector_push(Cog_vector *v, Cog_val val) {
-    if(v->count + 1 < v->capacity) {
-        v->capacity *= COG_VECTOR_GROWTH_FACTOR;
-        v->val = realloc(v->val, v->capacity);
+void cog_value_print(Cog_value val) {
+    switch(val.type) {
+        case COG_NUMBER:
+            printf("%g", TO_NUM(val));
+            break;
+        case COG_BOOLEAN:
+            printf(TO_BOOL(val) ? "true" : "false");
+            break;
     }
-    v->val[v->count] = val;
-    v->count++;
 }
 
-Cog_val vector_get(const Cog_vector *v, unsigned int index) {
-    if(index >= v->count) {
-        // TODO: signal an error somehow
-        return 0;
+void cog_array_init(Cog_array *arr) {
+    arr->p = (Cog_value*) malloc(sizeof(Cog_value) *
+            COG_ARRAY_INITIAL_CAPACITY);
+    arr->capacity = COG_ARRAY_INITIAL_CAPACITY;
+    arr->count = 0;
+}
+
+void cog_array_push(Cog_array *arr, Cog_value val) {
+    if(arr->count + 1 < arr->capacity) {
+        arr->capacity *= COG_ARRAY_GROWTH_FACTOR;
+        arr->p = realloc(arr->p, arr->capacity);
     }
-    return v->val[index];
+    arr->p[arr->count] = val;
+    arr->count++;
 }
 
-Cog_val vector_pop(Cog_vector *v) {
-    return v->val[--v->count];
+Cog_value cog_array_get(const Cog_array *arr, unsigned index) {
+    if(index >= arr->count)
+        // TODO: signal an error
+        return COG_NUM(0);
+    return arr->p[index];
 }
 
-void vector_free(Cog_vector *v) {
-    free(v->val);
-    v->capacity = 0;
-    v->count = 0;
+Cog_value cog_array_pop(Cog_array *arr) {
+    if(arr->count == 0)
+        // TODO signal an error
+        return COG_NUM(0);
+    return arr->p[--arr->count];
+}
+
+void cog_array_free(Cog_array *arr) {
+    free(arr->p);
+    arr->capacity = 0;
+    arr->count = 0;
 }
