@@ -36,6 +36,7 @@ typedef enum {
     TOKEN_NOT,
     TOKEN_AND,
     TOKEN_OR,
+    TOKEN_NULL,
 
     // Operators
     TOKEN_PLUS,

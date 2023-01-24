@@ -34,6 +34,9 @@ void cog_value_print(Cog_value val) {
         case COG_BOOLEAN:
             printf(TO_BOOL(val) ? "true" : "false");
             break;
+        case COG_NULL:
+            printf("null");
+            break;
     }
 }
 

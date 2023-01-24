@@ -84,18 +84,23 @@ static void parse_value(Parser *pr, Box *box) {
             advance(pr);
             double val = strtod(pr->prev.start, NULL);
             uint8_t i = box_value_write(box, COG_NUM(val));
-            box_code_write(box, OP_PUSH);
+            box_code_write(box, OP_PSH);
             box_code_write(box, i);
             break;
 
         case TOKEN_TRUE:
             advance(pr);
-            box_code_write(box, OP_TRUE);
+            box_code_write(box, OP_PSH_TRUE);
             break;
 
         case TOKEN_FALSE:
             advance(pr);
-            box_code_write(box, OP_FALSE);
+            box_code_write(box, OP_PSH_FALSE);
+            break;
+
+        case TOKEN_NULL:
+            advance(pr);
+            box_code_write(box, OP_PSH_NULL);
             break;
 
         case TOKEN_OPEN_PAREN: // parenthesized expression

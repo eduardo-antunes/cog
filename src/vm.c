@@ -152,16 +152,19 @@ Cog_value vm_execute(Cog_vm *vm, Box *box) {
                 break;
 
             // Stack ops
-            case OP_PUSH:
+            case OP_PSH:
                 addr = box->code[++i];
                 Cog_value v = cog_array_get(&box->constants, addr);
                 cog_array_push(&vm->stack, v);
                 break;
-            case OP_TRUE:
+            case OP_PSH_TRUE:
                 cog_array_push(&vm->stack, COG_BOOL(true));
                 break;
-            case OP_FALSE:
+            case OP_PSH_FALSE:
                 cog_array_push(&vm->stack, COG_BOOL(false));
+                break;
+            case OP_PSH_NULL:
+                cog_array_push(&vm->stack, COG_NULL());
                 break;
         }
     }

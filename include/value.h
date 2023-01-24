@@ -30,6 +30,7 @@
 typedef enum {
     COG_NUMBER,
     COG_BOOLEAN,
+    COG_NULL,
 } Cog_type;
 
 typedef struct {
@@ -40,20 +41,32 @@ typedef struct {
     Cog_type type;
 } Cog_value;
 
+void cog_value_print(Cog_value val);
+
+// Conversion of C values to Cog values
+
 #define COG_NUM(x)  ((Cog_value) { {.number = (x)},  COG_NUMBER  })
+
 #define COG_BOOL(b) ((Cog_value) { {.boolean = (b)}, COG_BOOLEAN })
 
+#define COG_NULL()  ((Cog_value) { {.number = 0},    COG_NULL    })
+
+// Conversion of Cog values to C values
+
 #define TO_NUM(cog_val) ((cog_val).as.number)
+
 #define TO_BOOL(cog_val) ((cog_val).as.boolean)
 
-#define IS_NUM(cog_val) ((cog_val).type == COG_NUMBER)
-#define IS_BOOL(cog_val) ((cog_val).type == COG_BOOLEAN)
-
-// Only false has a false logic value (for now)
 #define LOGIC_VAL(cog_val) \
-    (((cog_val).type != COG_BOOLEAN) || (TO_BOOL(cog_val)))
+    ((((cog_val).type != COG_NULL) \
+     && ((cog_val).type != COG_BOOLEAN)) \
+     || (TO_BOOL(cog_val)))
 
-void cog_value_print(Cog_value val);
+// Type checking operations
+
+#define IS_NUM(cog_val) ((cog_val).type == COG_NUMBER)
+
+#define IS_BOOL(cog_val) ((cog_val).type == COG_BOOLEAN)
 
 // Basic dynamic array
 

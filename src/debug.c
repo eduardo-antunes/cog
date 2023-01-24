@@ -58,13 +58,13 @@ void disassemble(const Box *box) {
                 printf("or\n");
                 break;
 
-            case OP_TRUE:
+            case OP_PSH_TRUE:
                 printf("psh true\n");
                 break;
-            case OP_FALSE:
+            case OP_PSH_FALSE:
                 printf("psh false\n");
                 break;
-            case OP_PUSH:
+            case OP_PSH:
                 addr = box->code[++i];
                 v = box->constants.p[addr];
                 printf("psh ");

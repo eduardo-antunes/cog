@@ -108,8 +108,14 @@ static Token_t id_type(Lexer *lex) {
         case 'a': return check_keyword(lex, 1, 2, "nd",   TOKEN_AND);
         case 'f': return check_keyword(lex, 1, 4, "alse", TOKEN_FALSE);
         case 'o': return check_keyword(lex, 1, 1, "r",    TOKEN_OR);
-        case 'n': return check_keyword(lex, 1, 2, "ot",   TOKEN_NOT);
         case 't': return check_keyword(lex, 1, 3, "rue",  TOKEN_TRUE);
+        case 'n': 
+            if(lex->current - lex->start > 1) {
+                switch(lex->start[1]) {
+                    case 'o': return check_keyword(lex, 2, 1, "t", TOKEN_NOT);
+                    case 'u': return check_keyword(lex, 2, 2, "ll", TOKEN_NULL);
+                }
+            }
     }
     return TOKEN_ID;
 }

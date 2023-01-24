@@ -39,11 +39,12 @@ typedef enum {
     OP_AND,
     OP_OR,
 
-    OP_TRUE,
-    OP_FALSE,
-    OP_PUSH,
+    OP_PSH,
+    OP_PSH_TRUE,
+    OP_PSH_FALSE,
+    OP_PSH_NULL,
 
-    OP_RETURN,
+    OP_RET,
 } Op_code;
 
 #define BOX_CODE_INITIAL_CAPACITY 10
