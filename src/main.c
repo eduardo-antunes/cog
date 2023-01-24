@@ -43,7 +43,9 @@ int main(void) {
         bool alright = parse(&pr, &box);
         if(alright) {
             Cog_value res = vm_execute(&vm, &box);
-            printf("=> %g\n", TO_NUM(res));
+            printf("=> ");
+            cog_value_print(res);
+            printf("\n");
         }
         box_free(&box);
     }

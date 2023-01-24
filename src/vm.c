@@ -20,12 +20,14 @@
    <https://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
+
 #include "box.h"
 #include "common.h"
 #include "value.h"
 #include "vm.h"
 
-// Runtime operations
+// Arithmetic ops
 
 static Result vm_neg(Cog_vm *vm) {
     Cog_value v = cog_array_pop(&vm->stack);
@@ -81,6 +83,31 @@ static Result vm_div(Cog_vm *vm) {
     return R_OK;
 }
 
+// Logic ops
+
+static Result vm_not(Cog_vm *vm) {
+    Cog_value v = cog_array_pop(&vm->stack);
+    v = COG_BOOL(!LOGIC_VAL(v));
+    cog_array_push(&vm->stack, v);
+    return R_OK;
+}
+
+static Result vm_and(Cog_vm *vm) {
+    Cog_value v2 = cog_array_pop(&vm->stack);
+    Cog_value v1 = cog_array_pop(&vm->stack);
+    bool b = LOGIC_VAL(v1) && LOGIC_VAL(v2);
+    cog_array_push(&vm->stack, COG_BOOL(b));
+    return R_OK;
+}
+
+static Result vm_or(Cog_vm *vm) {
+    Cog_value v2 = cog_array_pop(&vm->stack);
+    Cog_value v1 = cog_array_pop(&vm->stack);
+    bool b = LOGIC_VAL(v1) || LOGIC_VAL(v2);
+    cog_array_push(&vm->stack, COG_BOOL(b));
+    return R_OK;
+}
+
 // Public interface
 
 void vm_start(Cog_vm *vm) {
@@ -93,36 +120,51 @@ void vm_end(Cog_vm *vm) {
 
 Cog_value vm_execute(Cog_vm *vm, Box *box) {
     uint8_t addr;
-    cog_array_init(&vm->stack);
+    Result res = R_OK;
     for(unsigned i = 0; i < box->count; ++i) {
         switch(box->code[i]) {
+            // Arithmetic ops
             case OP_NEG:
-                vm_neg(vm);
+                res = vm_neg(vm);
                 break;
             case OP_ADD:
-                vm_add(vm);
+                res = vm_add(vm);
                 break;
             case OP_SUB:
-                vm_sub(vm);
+                res = vm_sub(vm);
                 break;
             case OP_MUL:
-                vm_mul(vm);
+                res = vm_mul(vm);
                 break;
             case OP_DIV:
-                vm_div(vm);
+                res = vm_div(vm);
                 break;
 
-            // Loading operations
+            // Boolean ops
+            case OP_NOT:
+                res = vm_not(vm);
+                break;
+            case OP_AND:
+                res = vm_and(vm);
+                break;
+            case OP_OR:
+                res = vm_or(vm);
+                break;
+
+            // Stack ops
             case OP_PUSH:
                 addr = box->code[++i];
                 Cog_value v = cog_array_get(&box->constants, addr);
                 cog_array_push(&vm->stack, v);
                 break;
-
-            // Others
-            case OP_RETURN:
+            case OP_TRUE:
+                cog_array_push(&vm->stack, COG_BOOL(true));
+                break;
+            case OP_FALSE:
+                cog_array_push(&vm->stack, COG_BOOL(false));
                 break;
         }
     }
+    if(res != R_OK) eprintf("Runtime error ocurred!\n");
     return cog_array_pop(&vm->stack);
 }

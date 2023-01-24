@@ -49,6 +49,10 @@ typedef struct {
 #define IS_NUM(cog_val) ((cog_val).type == COG_NUMBER)
 #define IS_BOOL(cog_val) ((cog_val).type == COG_BOOLEAN)
 
+// Only false has a false logic value (for now)
+#define LOGIC_VAL(cog_val) \
+    (((cog_val).type != COG_BOOLEAN) || (TO_BOOL(cog_val)))
+
 void cog_value_print(Cog_value val);
 
 // Basic dynamic array

@@ -36,8 +36,9 @@ typedef struct {
 } Cog_vm;
 
 void vm_start(Cog_vm *vm);
-void vm_end(Cog_vm *vm);
 
 Cog_value vm_execute(Cog_vm *vm, Box *box);
+
+void vm_end(Cog_vm *vm);
 
 #endif // COG_VM_H

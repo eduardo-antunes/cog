@@ -113,20 +113,20 @@ static void parse_unary(Parser *pr, Box *box) {
     switch(pr->current.type) {
         case TOKEN_MINUS:
             advance(pr);
-            box_code_write(box, OP_NEG);
             parse_unary(pr, box);
+            box_code_write(box, OP_NEG);
             break;
 
         case TOKEN_NOT:
             advance(pr);
-            box_code_write(box, OP_NOT);
             parse_unary(pr, box);
+            box_code_write(box, OP_NOT);
             break;
 
         default:
+            parse_value(pr, box);
             break;
     }
-    parse_value(pr, box);
 }
 
 static void parse_prod(Parser *pr, Box *box) {

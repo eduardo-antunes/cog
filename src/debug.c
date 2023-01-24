@@ -59,14 +59,15 @@ void disassemble(const Box *box) {
                 break;
 
             case OP_TRUE:
-                printf("push true\n");
+                printf("psh true\n");
                 break;
             case OP_FALSE:
-                printf("push false\n");
+                printf("psh false\n");
                 break;
             case OP_PUSH:
                 addr = box->code[++i];
                 v = box->constants.p[addr];
+                printf("psh ");
                 cog_value_print(v);
                 printf("\n");
                 break;
