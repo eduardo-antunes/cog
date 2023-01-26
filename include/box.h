@@ -36,6 +36,9 @@ typedef enum {
     OP_DIV,
 
     OP_NOT,
+    OP_EQ,
+    OP_LT,
+    OP_GT,
     OP_AND,
     OP_OR,
 

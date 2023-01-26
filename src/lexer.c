@@ -60,6 +60,14 @@ static char peek_next(Lexer *lex) {
     return lex->current[1];
 }
 
+static bool match(Lexer *lex, char ch) {
+    if(lex->current[0] == ch) {
+        advance(lex);
+        return true;
+    }
+    return false;
+}
+
 // Lexing functions
 
 static Token make_tok(Lexer *lex, Token_t type) {
@@ -171,6 +179,24 @@ Token lexer_get_tok(Lexer *lex) {
         case '(': return make_tok(lex, TOKEN_OPEN_PAREN);
         case ')': return make_tok(lex, TOKEN_CLOSE_PAREN);
         case END: return make_tok(lex, TOKEN_END);
+
+        case '<':
+            if(match(lex, '=')) 
+                return make_tok(lex, TOKEN_LESS_EQUAL);
+            return make_tok(lex, TOKEN_LESS);
+        case '>':
+            if(match(lex, '='))
+                return make_tok(lex, TOKEN_GREATER_EQUAL);
+            return make_tok(lex, TOKEN_GREATER);
+        case '=':
+            if(match(lex, '='))
+                return make_tok(lex, TOKEN_EQUAL_EQUAL);
+            return make_err_tok(lex, "Assignment not implemented yet");
+        case '!':
+            if(match(lex, '='))
+                return make_tok(lex, TOKEN_NOT_EQUAL);
+            return make_err_tok(lex, 
+                    "Unrecognized operator '!'; do you mean 'not'?");
     }
 
     if(is_alpha(ch)) return make_id_tok(lex);

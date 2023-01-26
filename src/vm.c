@@ -29,25 +29,48 @@
 
 // Types of operations:
 
-#define BIN_ARITH_OP(result_type, op) {                       \
-        Cog_value v2 = cog_array_pop(&vm->stack);             \
-        Cog_value v1 = cog_array_pop(&vm->stack);             \
-                                                              \
-        if(!IS_NUM(v1) || !IS_NUM(v2))                        \
-            return RES_ERR_TYPE;                              \
-                                                              \
-        double a = TO_NUM(v1), b = TO_NUM(v2), s = a op b;    \
-        cog_array_push(&vm->stack, COG_CAST(result_type, s)); \
-                                                              \
+#define add(a, b)     ((a) + (b))
+#define sub(a, b)     ((a) - (b))
+#define mul(a, b)     ((a) * (b))
+#define div(a, b)     ((a) / (b))
+#define less(a, b)    ((a) < (b))
+#define greater(a, b) ((a) > (b))
+
+#define BIN_ARITH_OP(result_type, op) {                    \
+        Cog_value v2 = cog_array_pop(&vm->stack);          \
+        Cog_value v1 = cog_array_pop(&vm->stack);          \
+                                                           \
+        if(!IS_NUM(v1) || !IS_NUM(v2))                     \
+            return RES_ERR_TYPE;                           \
+                                                           \
+        double a = TO_NUM(v1), b = TO_NUM(v2);             \
+        cog_array_push(&vm->stack, result_type(op(a, b))); \
     }
 
-#define BIN_LOGIC_OP(result_type, op) {                          \
-        Cog_value v2 = cog_array_pop(&vm->stack);                \
-        Cog_value v1 = cog_array_pop(&vm->stack);                \
-                                                                 \
-        double p = LOGIC_VAL(v1), q = LOGIC_VAL(v2), r = p op q; \
-        cog_array_push(&vm->stack, COG_CAST(result_type, r));    \
+#define and(p, q) ((p) && (q))
+#define or(p, q)  ((p) || (q))
+
+#define BIN_LOGIC_OP(result_type, op) {                    \
+        Cog_value v2 = cog_array_pop(&vm->stack);          \
+        Cog_value v1 = cog_array_pop(&vm->stack);          \
+                                                           \
+        double p = LOGIC_VAL(v1), q = LOGIC_VAL(v2);       \
+        cog_array_push(&vm->stack, result_type(op(p, q))); \
     }
+
+static bool cog_value_equal(Cog_value v1, Cog_value v2) {
+    // values are only equal if their type is the same
+    if(v1.type != v2.type) return false;
+    switch(v1.type) {
+        case TYPE_NUMBER:
+            return TO_NUM(v1) == TO_NUM(v2);
+        case TYPE_BOOLEAN:
+            return TO_BOOL(v1) == TO_BOOL(v2);
+        case TYPE_NONE:
+            return true;
+    }
+    return false; // unreachable
+}
 
 // Public interface
 
@@ -61,8 +84,8 @@ void cog_vm_free(Cog_vm *vm) {
 
 Exec_result cog_vm_execute(Cog_vm *vm, Box *box) {
 
-#define push(v) cog_array_push(&vm->stack, (v));
-#define pop()   cog_array_pop(&vm->stack);
+#define push(v) cog_array_push(&vm->stack, (v))
+#define pop()   cog_array_pop(&vm->stack)
 
     uint8_t addr;
     for(unsigned i = 0; i < box->count; ++i) {
@@ -76,16 +99,30 @@ Exec_result cog_vm_execute(Cog_vm *vm, Box *box) {
                 break;
             }
             case OP_ADD:
-                BIN_ARITH_OP(TYPE_NUMBER, +);
+                BIN_ARITH_OP(COG_NUM, add);
                 break;
             case OP_SUB:
-                BIN_ARITH_OP(TYPE_NUMBER, -);
+                BIN_ARITH_OP(COG_NUM, sub);
                 break;
             case OP_MUL:
-                BIN_ARITH_OP(TYPE_NUMBER, *);
+                BIN_ARITH_OP(COG_NUM, mul);
                 break;
             case OP_DIV:
-                BIN_ARITH_OP(TYPE_NUMBER, /);
+                BIN_ARITH_OP(COG_NUM, div);
+                break;
+
+            // Relational ops
+            case OP_EQ: {
+                Cog_value b = pop(), a = pop();
+                bool equal = cog_value_equal(a, b);
+                push(COG_BOOL(equal));
+                break;
+            }
+            case OP_LT:
+                BIN_ARITH_OP(COG_BOOL, less);
+                break;
+            case OP_GT:
+                BIN_ARITH_OP(COG_BOOL, greater);
                 break;
 
             // Boolean ops
@@ -96,10 +133,10 @@ Exec_result cog_vm_execute(Cog_vm *vm, Box *box) {
                 break;
             }
             case OP_AND:
-                BIN_LOGIC_OP(TYPE_BOOLEAN, &&); // TODO short-circuit
+                BIN_LOGIC_OP(COG_BOOL, and); // TODO short-circuit
                 break;
             case OP_OR:
-                BIN_LOGIC_OP(TYPE_BOOLEAN, ||); // TODO short-circuit
+                BIN_LOGIC_OP(COG_BOOL, or); // TODO short-circuit
                 break;
 
             // Stack ops
@@ -127,3 +164,11 @@ Exec_result cog_vm_execute(Cog_vm *vm, Box *box) {
 
 #undef BIN_ARITH_OP
 #undef BIN_LOGIC_OP
+#undef add
+#undef sub
+#undef mul
+#undef div
+#undef less
+#undef greater
+#undef and
+#undef or

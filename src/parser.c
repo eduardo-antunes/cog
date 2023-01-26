@@ -167,6 +167,7 @@ static void parse_sum(Parser *pr, Box *box) {
                 op = OP_SUB;
                 break;
             default:
+                // unreachable
                 break;
         }
         parse_prod(pr, box);
@@ -174,10 +175,57 @@ static void parse_sum(Parser *pr, Box *box) {
     }
 }
 
-static void parse_conj(Parser *pr, Box *box) {
+// <, >, >=, <=
+static void parse_comparison(Parser *pr, Box *box) {
+    Op_code op;
+    bool negate = false;
     parse_sum(pr, box);
-    while(match(pr, TOKEN_AND)) {
+    while(match(pr, TOKEN_LESS) || match(pr, TOKEN_LESS_EQUAL) ||
+            match(pr, TOKEN_GREATER) || match(pr, TOKEN_GREATER_EQUAL)) {
+        switch(pr->prev.type) {
+            case TOKEN_LESS:
+                op = OP_LT;
+                break;
+            case TOKEN_LESS_EQUAL:
+                // (a <= b) = not (a > b)
+                op = OP_GT;
+                negate = true;
+                break;
+            case TOKEN_GREATER:
+                op = OP_GT;
+                break;
+            case TOKEN_GREATER_EQUAL:
+                // (a >= b) = not (a < b)
+                op = OP_LT;
+                negate = true;
+                break;
+            default:
+                // unreachable
+                break;
+        }
         parse_sum(pr, box);
+        box_code_write(box, op);
+        if(negate) box_code_write(box, OP_NOT);
+    }
+}
+
+// ==, !=
+static void parse_equality(Parser *pr, Box *box) {
+    bool negate = false;
+    parse_comparison(pr, box);
+    while(match(pr, TOKEN_EQUAL_EQUAL) || match(pr, TOKEN_NOT_EQUAL)) {
+        if(pr->prev.type == TOKEN_NOT_EQUAL)
+            negate = true;
+        parse_comparison(pr, box);
+        box_code_write(box, OP_EQ);
+        if(negate) box_code_write(box, OP_NOT);
+    }
+}
+
+static void parse_conj(Parser *pr, Box *box) {
+    parse_equality(pr, box);
+    while(match(pr, TOKEN_AND)) {
+        parse_equality(pr, box);
         box_code_write(box, OP_AND);
     }
 }

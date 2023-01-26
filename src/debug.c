@@ -51,6 +51,15 @@ void disassemble(const Box *box) {
             case OP_NOT:
                 printf("not\n");
                 break;
+            case OP_EQ:
+                printf("equal\n");
+                break;
+            case OP_LT:
+                printf("less\n");
+                break;
+            case OP_GT:
+                printf("greater\n");
+                break;
             case OP_AND:
                 printf("and\n");
                 break;
@@ -63,6 +72,9 @@ void disassemble(const Box *box) {
                 break;
             case OP_PSH_FALSE:
                 printf("psh false\n");
+                break;
+            case OP_PSH_NONE:
+                printf("psh none\n");
                 break;
             case OP_PSH:
                 addr = box->code[++i];
