@@ -41,12 +41,16 @@ int main(void) {
         box_init(&box);
         bool alright = parse(&pr, &box);
         if(alright) {
-            vm_start(&vm);
-            Cog_value res = vm_execute(&vm, &box);
-            vm_end(&vm);
-            printf("=> ");
-            cog_value_print(res);
-            printf("\n");
+            cog_vm_init(&vm);
+            Exec_result res = cog_vm_execute(&vm, &box);
+            if(res != RES_OK) {
+                eprintf("(!) Runtime Error ocurred!\n");
+            } else {
+                printf("=> ");
+                cog_value_print(cog_array_pop(&vm.stack));
+                printf("\n");
+            }
+            cog_vm_free(&vm);
         }
         box_free(&box);
     }

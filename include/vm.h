@@ -27,18 +27,18 @@
 #include "value.h"
 
 typedef enum {
-    R_OK,
-    R_ERR_TYPE,
-} Result;
+    RES_OK,
+    RES_ERR_TYPE,
+} Exec_result;
 
 typedef struct {
     Cog_array stack;
 } Cog_vm;
 
-void vm_start(Cog_vm *vm);
+void cog_vm_init(Cog_vm *vm);
 
-Cog_value vm_execute(Cog_vm *vm, Box *box);
+void cog_vm_free(Cog_vm *vm);
 
-void vm_end(Cog_vm *vm);
+Exec_result cog_vm_execute(Cog_vm *vm, Box *box);
 
 #endif // COG_VM_H

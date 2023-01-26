@@ -27,147 +27,103 @@
 #include "value.h"
 #include "vm.h"
 
-// Arithmetic ops
+// Types of operations:
 
-static Result vm_neg(Cog_vm *vm) {
-    Cog_value v = cog_array_pop(&vm->stack);
-    if(!IS_NUM(v)) 
-        return R_ERR_TYPE;
+#define BIN_ARITH_OP(result_type, op) {                       \
+        Cog_value v2 = cog_array_pop(&vm->stack);             \
+        Cog_value v1 = cog_array_pop(&vm->stack);             \
+                                                              \
+        if(!IS_NUM(v1) || !IS_NUM(v2))                        \
+            return RES_ERR_TYPE;                              \
+                                                              \
+        double a = TO_NUM(v1), b = TO_NUM(v2), s = a op b;    \
+        cog_array_push(&vm->stack, COG_CAST(result_type, s)); \
+                                                              \
+    }
 
-    double x = TO_NUM(v);
-    cog_array_push(&vm->stack, COG_NUM(-x));
-    return R_OK;
-}
-
-static Result vm_add(Cog_vm *vm) {
-    Cog_value v2 = cog_array_pop(&vm->stack);
-    Cog_value v1 = cog_array_pop(&vm->stack);
-    if(!IS_NUM(v1) || !IS_NUM(v2)) 
-        return R_ERR_TYPE;
-
-    double x = TO_NUM(v1), y = TO_NUM(v2);
-    cog_array_push(&vm->stack, COG_NUM(x + y));
-    return R_OK;
-}
-
-static Result vm_sub(Cog_vm *vm) {
-    Cog_value v2 = cog_array_pop(&vm->stack);
-    Cog_value v1 = cog_array_pop(&vm->stack);
-    if(!IS_NUM(v1) || !IS_NUM(v2)) 
-        return R_ERR_TYPE;
-
-    double x = TO_NUM(v1), y = TO_NUM(v2);
-    cog_array_push(&vm->stack, COG_NUM(x - y));
-    return R_OK;
-}
-
-static Result vm_mul(Cog_vm *vm) {
-    Cog_value v2 = cog_array_pop(&vm->stack);
-    Cog_value v1 = cog_array_pop(&vm->stack);
-    if(!IS_NUM(v1) || !IS_NUM(v2)) 
-        return R_ERR_TYPE;
-
-    double x = TO_NUM(v1), y = TO_NUM(v2);
-    cog_array_push(&vm->stack, COG_NUM(x * y));
-    return R_OK;
-}
-
-static Result vm_div(Cog_vm *vm) {
-    Cog_value v2 = cog_array_pop(&vm->stack);
-    Cog_value v1 = cog_array_pop(&vm->stack);
-    if(!IS_NUM(v1) || !IS_NUM(v2)) 
-        return R_ERR_TYPE;
-
-    double x = TO_NUM(v1), y = TO_NUM(v2);
-    cog_array_push(&vm->stack, COG_NUM(x / y));
-    return R_OK;
-}
-
-// Logic ops
-
-static Result vm_not(Cog_vm *vm) {
-    Cog_value v = cog_array_pop(&vm->stack);
-    v = COG_BOOL(!LOGIC_VAL(v));
-    cog_array_push(&vm->stack, v);
-    return R_OK;
-}
-
-static Result vm_and(Cog_vm *vm) {
-    Cog_value v2 = cog_array_pop(&vm->stack);
-    Cog_value v1 = cog_array_pop(&vm->stack);
-    bool b = LOGIC_VAL(v1) && LOGIC_VAL(v2);
-    cog_array_push(&vm->stack, COG_BOOL(b));
-    return R_OK;
-}
-
-static Result vm_or(Cog_vm *vm) {
-    Cog_value v2 = cog_array_pop(&vm->stack);
-    Cog_value v1 = cog_array_pop(&vm->stack);
-    bool b = LOGIC_VAL(v1) || LOGIC_VAL(v2);
-    cog_array_push(&vm->stack, COG_BOOL(b));
-    return R_OK;
-}
+#define BIN_LOGIC_OP(result_type, op) {                          \
+        Cog_value v2 = cog_array_pop(&vm->stack);                \
+        Cog_value v1 = cog_array_pop(&vm->stack);                \
+                                                                 \
+        double p = LOGIC_VAL(v1), q = LOGIC_VAL(v2), r = p op q; \
+        cog_array_push(&vm->stack, COG_CAST(result_type, r));    \
+    }
 
 // Public interface
 
-void vm_start(Cog_vm *vm) {
+void cog_vm_init(Cog_vm *vm) {
     cog_array_init(&vm->stack);
 }
 
-void vm_end(Cog_vm *vm) {
+void cog_vm_free(Cog_vm *vm) {
     cog_array_free(&vm->stack);
 }
 
-Cog_value vm_execute(Cog_vm *vm, Box *box) {
+Exec_result cog_vm_execute(Cog_vm *vm, Box *box) {
+
+#define push(v) cog_array_push(&vm->stack, (v));
+#define pop()   cog_array_pop(&vm->stack);
+
     uint8_t addr;
-    Result res = R_OK;
     for(unsigned i = 0; i < box->count; ++i) {
         switch(box->code[i]) {
             // Arithmetic ops
-            case OP_NEG:
-                res = vm_neg(vm);
+            case OP_NEG: {
+                Cog_value v = pop();
+                if(!IS_NUM(v)) return RES_ERR_TYPE;
+                double x = TO_NUM(v);
+                push(COG_NUM(-x));
                 break;
+            }
             case OP_ADD:
-                res = vm_add(vm);
+                BIN_ARITH_OP(TYPE_NUMBER, +);
                 break;
             case OP_SUB:
-                res = vm_sub(vm);
+                BIN_ARITH_OP(TYPE_NUMBER, -);
                 break;
             case OP_MUL:
-                res = vm_mul(vm);
+                BIN_ARITH_OP(TYPE_NUMBER, *);
                 break;
             case OP_DIV:
-                res = vm_div(vm);
+                BIN_ARITH_OP(TYPE_NUMBER, /);
                 break;
 
             // Boolean ops
-            case OP_NOT:
-                res = vm_not(vm);
+            case OP_NOT: {
+                Cog_value b = pop();
+                b = COG_BOOL(!LOGIC_VAL(b));
+                push(b);
                 break;
+            }
             case OP_AND:
-                res = vm_and(vm);
+                BIN_LOGIC_OP(TYPE_BOOLEAN, &&); // TODO short-circuit
                 break;
             case OP_OR:
-                res = vm_or(vm);
+                BIN_LOGIC_OP(TYPE_BOOLEAN, ||); // TODO short-circuit
                 break;
 
             // Stack ops
             case OP_PSH:
                 addr = box->code[++i];
                 Cog_value v = cog_array_get(&box->constants, addr);
-                cog_array_push(&vm->stack, v);
+                push(v);
                 break;
             case OP_PSH_TRUE:
-                cog_array_push(&vm->stack, COG_BOOL(true));
+                push(COG_BOOL(true));
                 break;
             case OP_PSH_FALSE:
-                cog_array_push(&vm->stack, COG_BOOL(false));
+                push(COG_BOOL(false));
                 break;
-            case OP_PSH_NULL:
-                cog_array_push(&vm->stack, COG_NULL());
+            case OP_PSH_NONE:
+                push(COG_NONE);
                 break;
         }
     }
-    if(res != R_OK) eprintf("Runtime error ocurred!\n");
-    return cog_array_pop(&vm->stack);
+    return RES_OK;
+
+#undef push
+#undef pop
 }
+
+#undef BIN_ARITH_OP
+#undef BIN_LOGIC_OP

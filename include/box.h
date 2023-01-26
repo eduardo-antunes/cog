@@ -42,7 +42,7 @@ typedef enum {
     OP_PSH,
     OP_PSH_TRUE,
     OP_PSH_FALSE,
-    OP_PSH_NULL,
+    OP_PSH_NONE,
 
     OP_RET,
 } Op_code;

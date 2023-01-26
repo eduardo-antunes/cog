@@ -28,14 +28,14 @@
 
 void cog_value_print(Cog_value val) {
     switch(val.type) {
-        case COG_NUMBER:
+        case TYPE_NUMBER:
             printf("%g", TO_NUM(val));
             break;
-        case COG_BOOLEAN:
+        case TYPE_BOOLEAN:
             printf(TO_BOOL(val) ? "true" : "false");
             break;
-        case COG_NULL:
-            printf("null");
+        case TYPE_NONE:
+            printf("none");
             break;
     }
 }

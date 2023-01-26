@@ -33,7 +33,9 @@
 
 static void parse_error(Parser *pr, const char *format, ...) {
     if(pr->panic) return; // ignore errors on panic mode
+    pr->panic = pr->had_error = true;
     // show error message
+    eprintf("(!) ");
     va_list args;
     va_start(args, format);
     vfprintf(stderr, format, args);
@@ -98,9 +100,9 @@ static void parse_value(Parser *pr, Box *box) {
             box_code_write(box, OP_PSH_FALSE);
             break;
 
-        case TOKEN_NULL:
+        case TOKEN_NONE:
             advance(pr);
-            box_code_write(box, OP_PSH_NULL);
+            box_code_write(box, OP_PSH_NONE);
             break;
 
         case TOKEN_OPEN_PAREN: // parenthesized expression
@@ -199,5 +201,7 @@ void parser_init(Parser *pr, const char *source) {
 bool parse(Parser *pr, Box *box) {
     advance(pr);
     parse_expr(pr, box);
+    if(pr->current.type != TOKEN_END)
+        parse_error(pr, "Malformed expression");
     return !pr->had_error;
 }
