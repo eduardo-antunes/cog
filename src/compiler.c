@@ -26,8 +26,25 @@
 
 #include "box.h"
 #include "common.h"
+#include "compiler.h"
 #include "lexer.h"
-#include "parser.h"
+#include "opcodes.h"
+
+// Parser data structure
+
+typedef struct {
+    Token current;
+    Token prev;
+    Lexer lex;
+    bool panic;
+    bool had_error;
+} Parser;
+
+static void parser_init(Parser *pr, const char *source) {
+    pr->panic = false;
+    pr->had_error = false;
+    lexer_init(&pr->lex, source);
+}
 
 // Error reporting
 
@@ -72,6 +89,16 @@ static void expect(Parser *pr, Token_t type) {
         parse_error(pr, "expected token of type %d", type);
 }
 
+static void write_code(Parser *pr, Box *box, uint8_t byte) {
+    int err = box_code_write(box, byte);
+    if(err) parse_error(pr, "Could not write byte to box");
+}
+
+static uint8_t write_value(Parser *pr, Box *box, Cog_value value) {
+    // TODO deal with possible error in this operation
+    return box_value_write(box, value);
+}
+
 // Parsing functions
 
 static void parse_disj(Parser *pr, Box *box);
@@ -85,24 +112,24 @@ static void parse_value(Parser *pr, Box *box) {
         case TOKEN_NUM:
             advance(pr);
             double val = strtod(pr->prev.start, NULL);
-            uint8_t i = box_value_write(box, COG_NUM(val));
-            box_code_write(box, OP_PSH);
-            box_code_write(box, i);
+            uint8_t i = write_value(pr, box, NUMBER_VALUE(val));
+            write_code(pr, box, OP_PSH);
+            write_code(pr, box, i);
             break;
 
         case TOKEN_TRUE:
             advance(pr);
-            box_code_write(box, OP_PSH_TRUE);
+            write_code(pr, box, OP_PSH_TRUE);
             break;
 
         case TOKEN_FALSE:
             advance(pr);
-            box_code_write(box, OP_PSH_FALSE);
+            write_code(pr, box, OP_PSH_FALSE);
             break;
 
         case TOKEN_NONE:
             advance(pr);
-            box_code_write(box, OP_PSH_NONE);
+            write_code(pr, box, OP_PSH_NONE);
             break;
 
         case TOKEN_OPEN_PAREN: // parenthesized expression
@@ -121,13 +148,13 @@ static void parse_unary(Parser *pr, Box *box) {
         case TOKEN_MINUS:
             advance(pr);
             parse_unary(pr, box);
-            box_code_write(box, OP_NEG);
+            write_code(pr, box, OP_NEG);
             break;
 
         case TOKEN_NOT:
             advance(pr);
             parse_unary(pr, box);
-            box_code_write(box, OP_NOT);
+            write_code(pr, box, OP_NOT);
             break;
 
         default:
@@ -151,7 +178,7 @@ static void parse_prod(Parser *pr, Box *box) {
                 break;
         }
         parse_unary(pr, box);
-        box_code_write(box, op);
+        write_code(pr, box, op);
     }
 }
 
@@ -171,7 +198,7 @@ static void parse_sum(Parser *pr, Box *box) {
                 break;
         }
         parse_prod(pr, box);
-        box_code_write(box, op);
+        write_code(pr, box, op);
     }
 }
 
@@ -204,8 +231,8 @@ static void parse_comparison(Parser *pr, Box *box) {
                 break;
         }
         parse_sum(pr, box);
-        box_code_write(box, op);
-        if(negate) box_code_write(box, OP_NOT);
+        write_code(pr, box, op);
+        if(negate) write_code(pr, box, OP_NOT);
     }
 }
 
@@ -217,8 +244,8 @@ static void parse_equality(Parser *pr, Box *box) {
         if(pr->prev.type == TOKEN_NOT_EQUAL)
             negate = true;
         parse_comparison(pr, box);
-        box_code_write(box, OP_EQ);
-        if(negate) box_code_write(box, OP_NOT);
+        write_code(pr, box, OP_EQ);
+        if(negate) write_code(pr, box, OP_NOT);
     }
 }
 
@@ -226,7 +253,7 @@ static void parse_conj(Parser *pr, Box *box) {
     parse_equality(pr, box);
     while(match(pr, TOKEN_AND)) {
         parse_equality(pr, box);
-        box_code_write(box, OP_AND);
+        write_code(pr, box, OP_AND);
     }
 }
 
@@ -234,22 +261,21 @@ static void parse_disj(Parser *pr, Box *box) {
     parse_conj(pr, box);
     while(match(pr, TOKEN_OR)) {
         parse_conj(pr, box);
-        box_code_write(box, OP_OR);
+        write_code(pr, box, OP_OR);
     }
 }
 
 // Public interface
 
-void parser_init(Parser *pr, const char *source) {
-    pr->panic = false;
-    pr->had_error = false;
-    lexer_init(&pr->lex, source);
-}
+bool compile(const char *source, Box *box) {
+    Parser parser;
+    parser_init(&parser, source);
 
-bool parse(Parser *pr, Box *box) {
-    advance(pr);
-    parse_expr(pr, box);
-    if(pr->current.type != TOKEN_END)
-        parse_error(pr, "Malformed expression");
-    return !pr->had_error;
+    advance(&parser);
+    parse_expr(&parser, box);
+    if(parser.current.type != TOKEN_END)
+        parse_error(&parser, "Malformed expression");
+    write_code(&parser, box, OP_RET);
+
+    return !parser.had_error;
 }

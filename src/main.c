@@ -26,33 +26,26 @@
 
 #include "box.h"
 #include "common.h"
+#include "compiler.h"
 #include "debug.h"
-#include "lexer.h"
-#include "parser.h"
+#include "value.h"
 #include "vm.h"
 
 int main(void) {
     char expr[1024];
     Cog_vm vm;
+    cog_vm_init(&vm);
     while(fgets(expr, 1024, stdin) != NULL) {
-        Parser pr;
-        parser_init(&pr, expr);
         Box box;
         box_init(&box);
-        bool alright = parse(&pr, &box);
+        bool alright = compile(expr, &box);
         if(alright) {
-            cog_vm_init(&vm);
-            Exec_result res = cog_vm_execute(&vm, &box);
-            if(res != RES_OK) {
-                eprintf("(!) Runtime Error ocurred!\n");
-            } else {
-                printf("=> ");
-                cog_value_print(cog_array_pop(&vm.stack));
-                printf("\n");
-            }
-            cog_vm_free(&vm);
+            Cog_vm_result res = execute(&vm, &box);
+            if(res == RES_ERROR)
+                eprintf("(!) Runtime error ocurred!\n");
         }
         box_free(&box);
     }
+    cog_vm_free(&vm);
     return 0;
 }

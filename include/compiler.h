@@ -22,23 +22,13 @@
 
 // Parsing component for cog
 
-#ifndef COG_PARSER_H
-#define COG_PARSER_H
+#ifndef COG_COMPILER_H
+#define COG_COMPILER_H
 
 #include "box.h"
 #include "common.h"
 #include "lexer.h"
 
-typedef struct {
-    Token current;
-    Token prev;
-    Lexer lex;
-    bool panic;
-    bool had_error;
-} Parser;
+bool compile(const char *source, Box *box);
 
-void parser_init(Parser *pr, const char *source);
-
-bool parse(Parser *pr, Box *b);
-
-#endif // COG_PARSER_H
+#endif // COG_COMPILER_H

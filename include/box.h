@@ -25,30 +25,9 @@
 #ifndef COG_BOX_H
 #define COG_BOX_H
 
+#include "array.h"
 #include "common.h"
 #include "value.h"
-
-typedef enum {
-    OP_NEG,
-    OP_ADD,
-    OP_SUB,
-    OP_MUL,
-    OP_DIV,
-
-    OP_NOT,
-    OP_EQ,
-    OP_LT,
-    OP_GT,
-    OP_AND,
-    OP_OR,
-
-    OP_PSH,
-    OP_PSH_TRUE,
-    OP_PSH_FALSE,
-    OP_PSH_NONE,
-
-    OP_RET,
-} Op_code;
 
 #define BOX_CODE_INITIAL_CAPACITY 10
 #define BOX_CODE_GROWTH_FACTOR 2
@@ -60,12 +39,12 @@ typedef struct {
     Cog_array constants;
 } Box;
 
-void box_init(Box *b);
+int box_init(Box *box);
 
-void box_code_write(Box *b, uint8_t byte);
+int box_code_write(Box *box, uint8_t byte);
 
-uint8_t box_value_write(Box *b, Cog_value val);
+uint8_t box_value_write(Box *box, Cog_value value);
 
-void box_free(Box *b);
+void box_free(Box *box);
 
 #endif // COG_BOX_H

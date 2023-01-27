@@ -24,32 +24,38 @@
 
 #include "box.h"
 #include "common.h"
-#include "value.h"
 
-void box_init(Box *b) {
-    b->count = 0;
-    b->capacity = BOX_CODE_INITIAL_CAPACITY;
-    b->code = (uint8_t*) malloc(sizeof(uint8_t) *
-            BOX_CODE_INITIAL_CAPACITY);
-    cog_array_init(&b->constants);
+int box_init(Box *box) {
+    box->code = (uint8_t*) malloc(BOX_CODE_INITIAL_CAPACITY * sizeof(uint8_t));
+    if(box->code == NULL) return 1;
+    int err = cog_array_init(&box->constants);
+    if(err) return 2;
+
+    box->capacity = BOX_CODE_INITIAL_CAPACITY;
+    box->count = 0;
+    return 0;
 }
 
-void box_code_write(Box *b, uint8_t byte) {
-    // TODO Really gotta improve this
-    if(b->count + 1 > b->capacity) {
-        b->capacity *= BOX_CODE_GROWTH_FACTOR;
-        b->code = realloc(b->code, b->capacity);
+int box_code_write(Box *box, uint8_t byte) {
+    if(box->count + 1 > box->capacity) {
+        box->capacity *= BOX_CODE_GROWTH_FACTOR;
+        uint8_t *ptr = realloc(box->code, box->capacity);
+        if(ptr == NULL)
+            return 1;
+        box->code = ptr;
     }
-    b->code[b->count++] = byte;
+    box->code[box->count++] = byte;
+    return 0;
 }
 
-uint8_t box_value_write(Box *b, Cog_value val) {
-    cog_array_push(&b->constants, val);
-    return b->constants.count - 1;
+uint8_t box_value_write(Box *box, Cog_value value) {
+    // this is an unsafe cast to uint8_t (fine by now)
+    uint8_t index = cog_array_push(&box->constants, value);
+    return index;
 }
 
-void box_free(Box *b) {
-    free(b->code);
-    cog_array_free(&b->constants);
-    b->capacity = b->count = 0;
+void box_free(Box *box) {
+    free(box->code);
+    box->capacity = 0;
+    box->count = 0;
 }

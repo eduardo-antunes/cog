@@ -5,11 +5,12 @@ project('cog', 'c',
 
 inc_dir = include_directories('include')
 sources = files(
+  'src/array.c',
   'src/box.c',
+  'src/compiler.c',
   'src/debug.c',
   'src/lexer.c',
   'src/main.c',
-  'src/parser.c',
   'src/value.c',
   'src/vm.c',
 )

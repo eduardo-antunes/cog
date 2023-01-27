@@ -1,0 +1,3 @@
+- [ ] Finalizar a implementação dos operadores relacionais.
+- [ ] Incorporar melhor a estrutura de trie no Lexer.
+- [ ] Refatorar o backend. Ele é a parte mais desorganizada, porém mais crucial do projeto.

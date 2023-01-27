@@ -20,8 +20,6 @@
    <https://www.gnu.org/licenses/>.
 */
 
-// Cog values and data structures, featuring dynamic typing
-
 #ifndef COG_VALUE_H
 #define COG_VALUE_H
 
@@ -41,56 +39,35 @@ typedef struct {
     Cog_type type;
 } Cog_value;
 
-void cog_value_print(Cog_value val);
+void cog_value_print(Cog_value value);
 
-// Conversion of C values to Cog values
+bool cog_value_equal(Cog_value a, Cog_value b);
 
-#define COG_CAST(type, expr) ((Cog_value) { {(expr)}, (type) })
+// type checks
 
-#define COG_NUM(n)  ((Cog_value) { {.number = (n)},  TYPE_NUMBER  })
+#define VALUE_IS(value, t) ((value).type == (t))
 
-#define COG_BOOL(b) ((Cog_value) { {.boolean = (b)}, TYPE_BOOLEAN })
+#define IS_NUMBER(value) VALUE_IS((value), TYPE_NUMBER)
 
-#define COG_NONE    ((Cog_value) { {.number = 0},    TYPE_NONE    })
+#define IS_BOOLEAN(value) VALUE_IS((value), TYPE_BOOLEAN)
 
-// Conversion of Cog values to C values
+#define IS_NONE(value) VALUE_IS((value), TYPE_NONE)
 
-#define TO_NUM(v) ((v).as.number)
+// conversion: C value -> Cog_value
 
-#define TO_BOOL(v) ((v).as.boolean)
+#define NUMBER_VALUE(n) ((Cog_value) { {.number = (n)}, TYPE_NUMBER })
 
-#define LOGIC_VAL(v) \
-    ((((v).type != TYPE_NONE) \
-     && ((v).type != TYPE_BOOLEAN)) \
-     || (TO_BOOL(v)))
+#define BOOLEAN_VALUE(b) ((Cog_value) { {.boolean = (b)}, TYPE_BOOLEAN })
 
-// Type checking operations
+#define NONE_VALUE ((Cog_value) { {.number = 0}, TYPE_NONE })
 
-#define IS_NUM(v) ((v).type == TYPE_NUMBER)
+// conversion: Cog_value -> C value
 
-#define IS_BOOL(v) ((v).type == TYPE_BOOLEAN)
+#define TO_NUMBER(value) ((value).as.number)
 
-#define IS_NONE(v) ((v).type == TYPE_NONE)
+#define TO_BOOLEAN(value) ((value).as.boolean)
 
-// Basic dynamic array
-
-#define COG_ARRAY_INITIAL_CAPACITY 10
-#define COG_ARRAY_GROWTH_FACTOR 2
-
-typedef struct {
-    Cog_value *p;
-    unsigned count;
-    unsigned capacity;
-} Cog_array;
-
-void cog_array_init(Cog_array *arr);
-
-void cog_array_push(Cog_array *arr, Cog_value val);
-
-Cog_value cog_array_get(const Cog_array *arr, unsigned index);
-
-Cog_value cog_array_pop(Cog_array *arr);
-
-void cog_array_free(Cog_array *arr);
+#define TO_LOGIC(value) \
+    ((!IS_NONE(value) && !IS_BOOLEAN(value)) || TO_BOOLEAN(value))
 
 #endif // COG_VALUE_H

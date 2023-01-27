@@ -20,28 +20,33 @@
    <https://www.gnu.org/licenses/>.
 */
 
-#ifndef COG_VM_H
-#define COG_VM_H
-
-#include "box.h"
-#include "value.h"
-
-#define COG_VM_STACK_MAX 512
-
-typedef struct {
-    unsigned stack_top;
-    Cog_value stack[COG_VM_STACK_MAX];
-} Cog_vm;
+#ifndef COG_OPCODES_H
+#define COG_OPCODES_H
 
 typedef enum {
-    RES_OK,
-    RES_ERROR,
-} Cog_vm_result;
+    // arithmetic
+    OP_NEG,
+    OP_ADD,
+    OP_SUB,
+    OP_MUL,
+    OP_DIV,
 
-void cog_vm_init(Cog_vm *vm);
+    // logic and relational
+    OP_NOT,
+    OP_EQ,
+    OP_LT,
+    OP_GT,
+    OP_AND,
+    OP_OR,
 
-Cog_vm_result execute(Cog_vm *vm, const Box *box);
+    // stack manipulation
+    OP_PSH,
+    OP_PSH_TRUE,
+    OP_PSH_FALSE,
+    OP_PSH_NONE,
 
-void cog_vm_free(Cog_vm *vm);
+    // others
+    OP_RET,
+} Op_code;
 
-#endif // COG_VM_H
+#endif // COG_OPCODES_H

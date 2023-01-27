@@ -20,28 +20,27 @@
    <https://www.gnu.org/licenses/>.
 */
 
-#ifndef COG_VM_H
-#define COG_VM_H
+#ifndef COG_ARRAY_H
+#define COG_ARRAY_H
 
-#include "box.h"
+#include "common.h"
 #include "value.h"
 
-#define COG_VM_STACK_MAX 512
+#define COG_ARRAY_INITIAL_CAPACITY 8
+#define COG_ARRAY_GROWTH_FACTOR 2
 
 typedef struct {
-    unsigned stack_top;
-    Cog_value stack[COG_VM_STACK_MAX];
-} Cog_vm;
+    Cog_value *values;
+    unsigned count;
+    unsigned capacity;
+} Cog_array;
 
-typedef enum {
-    RES_OK,
-    RES_ERROR,
-} Cog_vm_result;
+int cog_array_init(Cog_array *arr);
 
-void cog_vm_init(Cog_vm *vm);
+unsigned cog_array_push(Cog_array *arr, Cog_value value);
 
-Cog_vm_result execute(Cog_vm *vm, const Box *box);
+Cog_value cog_array_get(const Cog_array *arr, unsigned index);
 
-void cog_vm_free(Cog_vm *vm);
+void cog_array_free(Cog_array *arr);
 
-#endif // COG_VM_H
+#endif // COG_ARRAY_H

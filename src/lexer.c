@@ -56,8 +56,8 @@ static char peek(Lexer *lex) {
     return lex->current[0];
 }
 
-static char peek_next(Lexer *lex) {
-    return lex->current[1];
+static bool at_end(Lexer *lex) {
+    return lex->current[0] == END;
 }
 
 static bool match(Lexer *lex, char ch) {
@@ -144,14 +144,8 @@ static void skip_whitespace(Lexer *lex) {
             case '\n':
                 ++lex->line;
                 break;
-            case '\r':
-                if(peek(lex) == '\n')
-                    advance(lex);
-                ++lex->line;
-                break;
             case '#':
-                while(peek(lex) != '\n' 
-                        || (peek(lex) != '\r' && peek_next(lex) != '\n'))
+                while(peek(lex) != '\n' && !at_end(lex))
                     advance(lex);
                 break;
         }

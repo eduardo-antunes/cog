@@ -25,13 +25,13 @@
 #include "box.h"
 #include "common.h"
 #include "debug.h"
+#include "opcodes.h"
 #include "value.h"
 
 void disassemble(const Box *box) {
     uint8_t addr;
-    Cog_value v;
-    for(unsigned i = 0; i < box->count; ++i) {
-        switch(box->code[i]) {
+    for(unsigned ip = 0; ip < box->count; ++ip) {
+        switch(box->code[ip]) {
             case OP_NEG:
                 printf("neg\n");
                 break;
@@ -47,18 +47,17 @@ void disassemble(const Box *box) {
             case OP_DIV:
                 printf("div\n");
                 break;
-
             case OP_NOT:
                 printf("not\n");
                 break;
             case OP_EQ:
-                printf("equal\n");
+                printf("eq\n");
                 break;
             case OP_LT:
-                printf("less\n");
+                printf("lt\n");
                 break;
             case OP_GT:
-                printf("greater\n");
+                printf("gt\n");
                 break;
             case OP_AND:
                 printf("and\n");
@@ -66,7 +65,13 @@ void disassemble(const Box *box) {
             case OP_OR:
                 printf("or\n");
                 break;
-
+            case OP_PSH:
+                addr = box->code[++ip];
+                Cog_value value = cog_array_get(&box->constants, addr);
+                printf("psh ");
+                cog_value_print(value);
+                printf("\n");
+                break;
             case OP_PSH_TRUE:
                 printf("psh true\n");
                 break;
@@ -76,13 +81,11 @@ void disassemble(const Box *box) {
             case OP_PSH_NONE:
                 printf("psh none\n");
                 break;
-            case OP_PSH:
-                addr = box->code[++i];
-                v = box->constants.p[addr];
-                printf("psh ");
-                cog_value_print(v);
-                printf("\n");
+            case OP_RET:
+                printf("ret\n");
                 break;
+            default:
+                printf("???\n");
         }
     }
 }
