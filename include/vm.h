@@ -29,8 +29,8 @@
 #define COG_VM_STACK_MAX 512
 
 typedef struct {
-    unsigned stack_top;
-    Cog_value stack[COG_VM_STACK_MAX];
+    uint8_t *ip;
+    Cog_array stack;
 } Cog_vm;
 
 typedef enum {

@@ -31,15 +31,17 @@
 
 typedef struct {
     Cog_value *values;
-    unsigned count;
-    unsigned capacity;
+    int count;
+    int capacity;
 } Cog_array;
 
-int cog_array_init(Cog_array *arr);
+int cog_array_init(Cog_array *arr, int initial_capacity);
 
-unsigned cog_array_push(Cog_array *arr, Cog_value value);
+int cog_array_push(Cog_array *arr, Cog_value value);
 
-Cog_value cog_array_get(const Cog_array *arr, unsigned index);
+Cog_value cog_array_get(const Cog_array *arr, int index);
+
+Cog_value cog_array_pop(Cog_array *arr);
 
 void cog_array_free(Cog_array *arr);
 

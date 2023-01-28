@@ -28,7 +28,7 @@
 int box_init(Box *box) {
     box->code = (uint8_t*) malloc(BOX_CODE_INITIAL_CAPACITY * sizeof(uint8_t));
     if(box->code == NULL) return 1;
-    int err = cog_array_init(&box->constants);
+    int err = cog_array_init(&box->constants, -1);
     if(err) return 2;
 
     box->capacity = BOX_CODE_INITIAL_CAPACITY;
@@ -48,10 +48,15 @@ int box_code_write(Box *box, uint8_t byte) {
     return 0;
 }
 
-uint8_t box_value_write(Box *box, Cog_value value) {
-    // this is an unsafe cast to uint8_t (fine by now)
-    uint8_t index = cog_array_push(&box->constants, value);
-    return index;
+uint8_t box_value_write(Box *box, Cog_value value, int *err) {
+    int index = cog_array_push(&box->constants, value);
+    if(index < 0) {
+        *err = 1;
+        return 0;
+    }
+    *err = 0;
+    // NOTE this cast is unsafe, but works for now
+    return (uint8_t) index;
 }
 
 void box_free(Box *box) {

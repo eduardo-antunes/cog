@@ -91,12 +91,20 @@ static void expect(Parser *pr, Token_t type) {
 
 static void write_code(Parser *pr, Box *box, uint8_t byte) {
     int err = box_code_write(box, byte);
-    if(err) parse_error(pr, "Could not write byte to box");
+    if(err) 
+        // this is a very rare error
+        parse_error(pr, "Could not write byte to box");
 }
 
 static uint8_t write_value(Parser *pr, Box *box, Cog_value value) {
-    // TODO deal with possible error in this operation
-    return box_value_write(box, value);
+    int err = 0;
+    uint8_t addr = box_value_write(box, value, &err);
+    if(err) {
+        // this is a very rare error
+        parse_error(pr, "Could not write constant to box");
+        return 0;
+    }
+    return addr;
 }
 
 // Parsing functions

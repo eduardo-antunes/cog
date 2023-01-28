@@ -26,21 +26,23 @@
 #include "common.h"
 #include "value.h"
 
-int cog_array_init(Cog_array *arr) {
+int cog_array_init(Cog_array *arr, int initial_capacity) {
+    if(initial_capacity <= 0) 
+        initial_capacity = COG_ARRAY_INITIAL_CAPACITY;
+
     arr->count = 0;
-    arr->capacity = COG_ARRAY_INITIAL_CAPACITY;
+    arr->capacity = initial_capacity;
     arr->values = (Cog_value*) malloc(arr->capacity * sizeof(Cog_value));
     if(arr->values == NULL) return 1;
     return 0;
 }
 
-unsigned cog_array_push(Cog_array *arr, Cog_value value) {
+int cog_array_push(Cog_array *arr, Cog_value value) {
     if(arr->count + 1 > arr->capacity) {
         arr->capacity *= COG_ARRAY_GROWTH_FACTOR;
         Cog_value *ptr = realloc(arr->values, arr->capacity);
         if(ptr == NULL)
-            // TODO signal this error properly
-            return 0;
+            return 1;
         arr->values = ptr;
     }
     int index = arr->count++;
@@ -48,8 +50,16 @@ unsigned cog_array_push(Cog_array *arr, Cog_value value) {
     return index;
 }
 
-Cog_value cog_array_get(const Cog_array *arr, unsigned int index) {
+Cog_value cog_array_get(const Cog_array *arr, int index) {
+    if(index < 0 || index >= arr->count)
+        return NONE_VALUE;
     return arr->values[index];
+}
+
+Cog_value cog_array_pop(Cog_array *arr) {
+    if(arr->count == 0)
+        return NONE_VALUE;
+    return arr->values[--arr->count];
 }
 
 void cog_array_free(Cog_array *arr) {

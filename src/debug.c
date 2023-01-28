@@ -28,64 +28,70 @@
 #include "opcodes.h"
 #include "value.h"
 
-void disassemble(const Box *box) {
+static int disassemble_inst(const Box *box, uint8_t *ptr) {
     uint8_t addr;
-    for(unsigned ip = 0; ip < box->count; ++ip) {
-        switch(box->code[ip]) {
-            case OP_NEG:
-                printf("neg\n");
-                break;
-            case OP_ADD:
-                printf("add\n");
-                break;
-            case OP_SUB:
-                printf("sub\n");
-                break;
-            case OP_MUL:
-                printf("mul\n");
-                break;
-            case OP_DIV:
-                printf("div\n");
-                break;
-            case OP_NOT:
-                printf("not\n");
-                break;
-            case OP_EQ:
-                printf("eq\n");
-                break;
-            case OP_LT:
-                printf("lt\n");
-                break;
-            case OP_GT:
-                printf("gt\n");
-                break;
-            case OP_AND:
-                printf("and\n");
-                break;
-            case OP_OR:
-                printf("or\n");
-                break;
-            case OP_PSH:
-                addr = box->code[++ip];
-                Cog_value value = cog_array_get(&box->constants, addr);
-                printf("psh ");
-                cog_value_print(value);
-                printf("\n");
-                break;
-            case OP_PSH_TRUE:
-                printf("psh true\n");
-                break;
-            case OP_PSH_FALSE:
-                printf("psh false\n");
-                break;
-            case OP_PSH_NONE:
-                printf("psh none\n");
-                break;
-            case OP_RET:
-                printf("ret\n");
-                break;
-            default:
-                printf("???\n");
-        }
+    switch(*ptr) {
+        case OP_NEG:
+            printf("neg\n");
+            return 1;
+        case OP_ADD:
+            printf("add\n");
+            return 1;
+        case OP_SUB:
+            printf("sub\n");
+            return 1;
+        case OP_MUL:
+            printf("mul\n");
+            return 1;
+        case OP_DIV:
+            printf("div\n");
+            return 1;
+        case OP_NOT:
+            printf("not\n");
+            return 1;
+        case OP_EQ:
+            printf("eq\n");
+            return 1;
+        case OP_LT:
+            printf("lt\n");
+            return 1;
+        case OP_GT:
+            printf("gt\n");
+            return 1;
+        case OP_AND:
+            printf("and\n");
+            return 1;
+        case OP_OR:
+            printf("or\n");
+            return 1;
+        case OP_PSH:
+            addr = *(++ptr);
+            Cog_value value = cog_array_get(&box->constants, addr);
+            printf("psh ");
+            cog_value_print(value);
+            printf("\n");
+            return 2;
+        case OP_PSH_TRUE:
+            printf("psh true\n");
+            return 1;
+        case OP_PSH_FALSE:
+            printf("psh false\n");
+            return 1;
+        case OP_PSH_NONE:
+            printf("psh none\n");
+            return 1;
+        case OP_RET:
+            printf("ret\n");
+            return 1;
+        default:
+            printf("???\n");
+            return 1;
     }
+
+}
+
+void disassemble(const Box *box) {
+    uint8_t *ptr = box->code;
+    while(ptr != &box->code[box->count])
+        ptr += disassemble_inst(box, ptr);
 }

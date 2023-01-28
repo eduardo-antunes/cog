@@ -21,33 +21,13 @@
 */
 
 #include <stdio.h>
+#include <stdarg.h>
 
+#include "array.h"
 #include "box.h"
 #include "value.h"
 #include "vm.h"
 #include "opcodes.h"
-
-// Core functions
-
-static int push(Cog_vm *vm, Cog_value value) {
-    if(vm->stack_top + 1 > COG_VM_STACK_MAX) {
-        // TODO improve error handling
-        eprintf("(!) Stack Overflow in the VM\n");
-        return 1;
-    }
-    vm->stack[vm->stack_top++] = value;
-    return 0;
-}
-
-static Cog_value pop(Cog_vm *vm) {
-    if(vm->stack_top == 0) {
-        // TODO improve error handling
-        eprintf("(!) Stack Underflow in the VM\n");
-        return NONE_VALUE;
-    }
-    int i = --vm->stack_top;
-    return vm->stack[i];
-}
 
 // Types of operations
 
@@ -59,104 +39,111 @@ static Cog_value pop(Cog_vm *vm) {
 #define less(a, b) ((a) < (b))
 #define greater(a, b) ((a) > (b))
 
-#define BIN_NUMERIC_OP(vm, type_value, op) {   \
-    Cog_value b = pop(vm);                     \
-    Cog_value a = pop(vm);                     \
+#define BIN_NUMERIC_OP(type_value, op) {       \
+    Cog_value b = pop();                       \
+    Cog_value a = pop();                       \
     if(!IS_NUMBER(a) || !IS_NUMBER(b))         \
         return RES_ERROR;                      \
                                                \
     double x = TO_NUMBER(a), y = TO_NUMBER(b); \
-    push(vm, type_value(op(x, y)));            \
+    push(type_value(op(x, y)));                \
 }
 
 #define and(p, q) ((p) && (q))
 #define or(p, q) ((p) || (q))
 
-#define BIN_LOGIC_OP(vm, op) {             \
-    Cog_value b = pop(vm);                 \
-    Cog_value a = pop(vm);                 \
+#define BIN_LOGIC_OP(op) {                 \
+    Cog_value b = pop();                   \
+    Cog_value a = pop();                   \
     bool p = TO_LOGIC(a), q = TO_LOGIC(b); \
-    push(vm, BOOLEAN_VALUE(op(p, q)));     \
+    push(BOOLEAN_VALUE(op(p, q)));         \
 }
-
 
 // Public interface
 
 void cog_vm_init(Cog_vm *vm) {
-    vm->stack_top = 0;
+    vm->ip = NULL;
+    cog_array_init(&vm->stack, 256);
 }
 
 void cog_vm_free(Cog_vm *vm) {
-    vm->stack_top = 0;
+    vm->ip = NULL;
+    cog_array_free(&vm->stack);
 }
 
 Cog_vm_result execute(Cog_vm *vm, const Box *box) {
+
+    #define push(value) cog_array_push(&vm->stack, (value))
+    #define pop() cog_array_pop(&vm->stack)
+    #define end() &box->code[box->count]
+
     uint8_t addr;
-    for(unsigned ip = 0; ip < box->count; ++ip) {
-        switch(box->code[ip]) {
+    vm->ip = box->code;
+    while(vm->ip != end()) {
+        switch(*vm->ip) {
             case OP_NEG: {
-                Cog_value a = pop(vm);
+                Cog_value a = pop();
                 if(!IS_NUMBER(a)) return RES_ERROR;
                 double x = TO_NUMBER(a);
-                push(vm, NUMBER_VALUE(-x));
+                push(NUMBER_VALUE(-x));
                 break;
             }
             case OP_ADD:
-                BIN_NUMERIC_OP(vm, NUMBER_VALUE, add);
+                BIN_NUMERIC_OP(NUMBER_VALUE, add);
                 break;
             case OP_SUB:
-                BIN_NUMERIC_OP(vm, NUMBER_VALUE, sub);
+                BIN_NUMERIC_OP(NUMBER_VALUE, sub);
                 break;
             case OP_MUL:
-                BIN_NUMERIC_OP(vm, NUMBER_VALUE, mul);
+                BIN_NUMERIC_OP(NUMBER_VALUE, mul);
                 break;
             case OP_DIV:
-                BIN_NUMERIC_OP(vm, NUMBER_VALUE, div);
+                BIN_NUMERIC_OP(NUMBER_VALUE, div);
                 break;
 
             case OP_NOT: {
-                Cog_value a = pop(vm);
+                Cog_value a = pop();
                 bool b = TO_LOGIC(a);
-                push(vm, BOOLEAN_VALUE(!b));
+                push(BOOLEAN_VALUE(!b));
                 break;
             }
             case OP_EQ: {
-                Cog_value b = pop(vm), a = pop(vm);
+                Cog_value b = pop(), a = pop();
                 bool p = cog_value_equal(a, b);
-                push(vm, BOOLEAN_VALUE(p));
+                push(BOOLEAN_VALUE(p));
                 break;
             }
             case OP_LT:
-                BIN_NUMERIC_OP(vm, BOOLEAN_VALUE, less);
+                BIN_NUMERIC_OP(BOOLEAN_VALUE, less);
                 break;
             case OP_GT:
-                BIN_NUMERIC_OP(vm, BOOLEAN_VALUE, greater);
+                BIN_NUMERIC_OP(BOOLEAN_VALUE, greater);
                 break;
             case OP_AND:
-                BIN_LOGIC_OP(vm, and);
+                BIN_LOGIC_OP(and);
                 break;
             case OP_OR:
-                BIN_LOGIC_OP(vm, or);
+                BIN_LOGIC_OP(or);
                 break;
 
             case OP_PSH:
-                addr = box->code[++ip];
+                addr = *(++vm->ip);
                 Cog_value a = cog_array_get(&box->constants, addr);
-                push(vm, a);
+                push(a);
                 break;
             case OP_PSH_TRUE:
-                push(vm, BOOLEAN_VALUE(true));
+                push(BOOLEAN_VALUE(true));
                 break;
             case OP_PSH_FALSE:
-                push(vm, BOOLEAN_VALUE(false));
+                push(BOOLEAN_VALUE(false));
                 break;
             case OP_PSH_NONE:
-                push(vm, NONE_VALUE);
+                push(NONE_VALUE);
                 break;
 
             case OP_RET: {
                 // Print the final result and exit (temporary)
-                Cog_value expr = pop(vm);
+                Cog_value expr = pop();
                 printf("=> ");
                 cog_value_print(expr);
                 printf("\n");
@@ -167,9 +154,16 @@ Cog_vm_result execute(Cog_vm *vm, const Box *box) {
                 eprintf("Unimplemented operation\n");
                 return RES_ERROR;
         }
+        ++vm->ip;
     }
     return RES_OK;
+
+    #undef push
+    #undef pop
+    #undef end
 }
+
+// Cleaning up local macros
 
 #undef add
 #undef sub
@@ -177,8 +171,8 @@ Cog_vm_result execute(Cog_vm *vm, const Box *box) {
 #undef div
 #undef less
 #undef greater
-#undef BIN_NUMERIC_OP
-
 #undef and
 #undef or
+
+#undef BIN_NUMERIC_OP
 #undef BIN_LOGIC_OP

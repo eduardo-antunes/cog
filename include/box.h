@@ -43,7 +43,7 @@ int box_init(Box *box);
 
 int box_code_write(Box *box, uint8_t byte);
 
-uint8_t box_value_write(Box *box, Cog_value value);
+uint8_t box_value_write(Box *box, Cog_value value, int *err);
 
 void box_free(Box *box);
 
