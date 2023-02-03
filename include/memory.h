@@ -20,29 +20,11 @@
    <https://www.gnu.org/licenses/>.
 */
 
-#ifndef COG_ARRAY_H
-#define COG_ARRAY_H
+#ifndef COG_MEMORY_H
+#define COG_MEMORY_H
 
 #include "common.h"
-#include "value.h"
 
-#define COG_ARRAY_INITIAL_CAPACITY 8
-#define COG_ARRAY_GROWTH_FACTOR 2
+void *cog_realloc(void *ptr, size_t old_size, size_t new_size);
 
-typedef struct {
-    Cog_value *values;
-    int count;
-    int capacity;
-} Cog_array;
-
-void cog_array_init(Cog_array *arr, int initial_capacity);
-
-int cog_array_push(Cog_array *arr, Cog_value value);
-
-Cog_value cog_array_get(const Cog_array *arr, int index);
-
-Cog_value cog_array_pop(Cog_array *arr);
-
-void cog_array_free(Cog_array *arr);
-
-#endif // COG_ARRAY_H
+#endif // COG_MEMORY_H

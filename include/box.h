@@ -39,11 +39,11 @@ typedef struct {
     Cog_array constants;
 } Box;
 
-int box_init(Box *box);
+void box_init(Box *box);
 
-int box_code_write(Box *box, uint8_t byte);
+void box_code_write(Box *box, uint8_t byte);
 
-uint8_t box_value_write(Box *box, Cog_value value, int *err);
+uint8_t box_value_write(Box *box, Cog_value value);
 
 void box_free(Box *box);
 

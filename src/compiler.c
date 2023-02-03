@@ -89,24 +89,6 @@ static void expect(Parser *pr, Token_t type) {
         parse_error(pr, "expected token of type %d", type);
 }
 
-static void write_code(Parser *pr, Box *box, uint8_t byte) {
-    int err = box_code_write(box, byte);
-    if(err) 
-        // this is a very rare error
-        parse_error(pr, "Could not write byte to box");
-}
-
-static uint8_t write_value(Parser *pr, Box *box, Cog_value value) {
-    int err = 0;
-    uint8_t addr = box_value_write(box, value, &err);
-    if(err) {
-        // this is a very rare error
-        parse_error(pr, "Could not write constant to box");
-        return 0;
-    }
-    return addr;
-}
-
 // Parsing functions
 
 static void parse_disj(Parser *pr, Box *box);
@@ -120,24 +102,24 @@ static void parse_value(Parser *pr, Box *box) {
         case TOKEN_NUM:
             advance(pr);
             double val = strtod(pr->prev.start, NULL);
-            uint8_t i = write_value(pr, box, NUMBER_VALUE(val));
-            write_code(pr, box, OP_PSH);
-            write_code(pr, box, i);
+            uint8_t i = box_value_write(box, NUMBER_VALUE(val));
+            box_code_write(box, OP_PSH);
+            box_code_write(box, i);
             break;
 
         case TOKEN_TRUE:
             advance(pr);
-            write_code(pr, box, OP_PSH_TRUE);
+            box_code_write(box, OP_PSH_TRUE);
             break;
 
         case TOKEN_FALSE:
             advance(pr);
-            write_code(pr, box, OP_PSH_FALSE);
+            box_code_write(box, OP_PSH_FALSE);
             break;
 
         case TOKEN_NONE:
             advance(pr);
-            write_code(pr, box, OP_PSH_NONE);
+            box_code_write(box, OP_PSH_NONE);
             break;
 
         case TOKEN_OPEN_PAREN: // parenthesized expression
@@ -156,13 +138,13 @@ static void parse_unary(Parser *pr, Box *box) {
         case TOKEN_MINUS:
             advance(pr);
             parse_unary(pr, box);
-            write_code(pr, box, OP_NEG);
+            box_code_write(box, OP_NEG);
             break;
 
         case TOKEN_NOT:
             advance(pr);
             parse_unary(pr, box);
-            write_code(pr, box, OP_NOT);
+            box_code_write(box, OP_NOT);
             break;
 
         default:
@@ -186,7 +168,7 @@ static void parse_prod(Parser *pr, Box *box) {
                 break;
         }
         parse_unary(pr, box);
-        write_code(pr, box, op);
+        box_code_write(box, op);
     }
 }
 
@@ -206,7 +188,7 @@ static void parse_sum(Parser *pr, Box *box) {
                 break;
         }
         parse_prod(pr, box);
-        write_code(pr, box, op);
+        box_code_write(box, op);
     }
 }
 
@@ -239,8 +221,8 @@ static void parse_comparison(Parser *pr, Box *box) {
                 break;
         }
         parse_sum(pr, box);
-        write_code(pr, box, op);
-        if(negate) write_code(pr, box, OP_NOT);
+        box_code_write(box, op);
+        if(negate) box_code_write(box, OP_NOT);
     }
 }
 
@@ -252,8 +234,8 @@ static void parse_equality(Parser *pr, Box *box) {
         if(pr->prev.type == TOKEN_NOT_EQUAL)
             negate = true;
         parse_comparison(pr, box);
-        write_code(pr, box, OP_EQ);
-        if(negate) write_code(pr, box, OP_NOT);
+        box_code_write(box, OP_EQ);
+        if(negate) box_code_write(box, OP_NOT);
     }
 }
 
@@ -261,7 +243,7 @@ static void parse_conj(Parser *pr, Box *box) {
     parse_equality(pr, box);
     while(match(pr, TOKEN_AND)) {
         parse_equality(pr, box);
-        write_code(pr, box, OP_AND);
+        box_code_write(box, OP_AND);
     }
 }
 
@@ -269,7 +251,7 @@ static void parse_disj(Parser *pr, Box *box) {
     parse_conj(pr, box);
     while(match(pr, TOKEN_OR)) {
         parse_conj(pr, box);
-        write_code(pr, box, OP_OR);
+        box_code_write(box, OP_OR);
     }
 }
 
@@ -283,7 +265,7 @@ bool compile(const char *source, Box *box) {
     parse_expr(&parser, box);
     if(parser.current.type != TOKEN_END)
         parse_error(&parser, "Malformed expression");
-    write_code(&parser, box, OP_RET);
+    box_code_write(box, OP_RET);
 
     return !parser.had_error;
 }

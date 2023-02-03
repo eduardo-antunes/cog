@@ -25,25 +25,20 @@
 #include "array.h"
 #include "common.h"
 #include "value.h"
+#include "memory.h"
 
-int cog_array_init(Cog_array *arr, int initial_capacity) {
+void cog_array_init(Cog_array *arr, int initial_capacity) {
     if(initial_capacity <= 0) 
         initial_capacity = COG_ARRAY_INITIAL_CAPACITY;
-
     arr->count = 0;
     arr->capacity = initial_capacity;
-    arr->values = (Cog_value*) malloc(arr->capacity * sizeof(Cog_value));
-    if(arr->values == NULL) return 1;
-    return 0;
+    arr->values = (Cog_value*) cog_realloc(NULL, 0, arr->capacity * sizeof(Cog_value));
 }
 
 int cog_array_push(Cog_array *arr, Cog_value value) {
     if(arr->count + 1 > arr->capacity) {
-        arr->capacity *= COG_ARRAY_GROWTH_FACTOR;
-        Cog_value *ptr = realloc(arr->values, arr->capacity);
-        if(ptr == NULL)
-            return 1;
-        arr->values = ptr;
+        int new_capacity = arr->capacity * COG_ARRAY_GROWTH_FACTOR;
+        arr->values = cog_realloc(arr->values, arr->capacity, new_capacity);
     }
     int index = arr->count++;
     arr->values[index] = value;

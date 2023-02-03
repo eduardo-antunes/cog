@@ -24,37 +24,25 @@
 
 #include "box.h"
 #include "common.h"
+#include "memory.h"
 
-int box_init(Box *box) {
-    box->code = (uint8_t*) malloc(BOX_CODE_INITIAL_CAPACITY * sizeof(uint8_t));
-    if(box->code == NULL) return 1;
-    int err = cog_array_init(&box->constants, -1);
-    if(err) return 2;
-
+void box_init(Box *box) {
+    box->code = (uint8_t*) cog_realloc(NULL, 0, BOX_CODE_INITIAL_CAPACITY * sizeof(uint8_t));
+    cog_array_init(&box->constants, -1);
     box->capacity = BOX_CODE_INITIAL_CAPACITY;
     box->count = 0;
-    return 0;
 }
 
-int box_code_write(Box *box, uint8_t byte) {
+void box_code_write(Box *box, uint8_t byte) {
     if(box->count + 1 > box->capacity) {
-        box->capacity *= BOX_CODE_GROWTH_FACTOR;
-        uint8_t *ptr = realloc(box->code, box->capacity);
-        if(ptr == NULL)
-            return 1;
-        box->code = ptr;
+        int new_capacity = box->capacity * BOX_CODE_GROWTH_FACTOR;
+        box->code = cog_realloc(box->code, box->capacity, new_capacity);
     }
     box->code[box->count++] = byte;
-    return 0;
 }
 
-uint8_t box_value_write(Box *box, Cog_value value, int *err) {
+uint8_t box_value_write(Box *box, Cog_value value) {
     int index = cog_array_push(&box->constants, value);
-    if(index < 0) {
-        *err = 1;
-        return 0;
-    }
-    *err = 0;
     // NOTE this cast is unsafe, but works for now
     return (uint8_t) index;
 }
