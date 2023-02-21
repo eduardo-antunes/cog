@@ -61,7 +61,7 @@ static void parse_error(Parser *pr, const char *format, ...) {
     if(pr->current.type == TOKEN_END)
         eprintf(" (END)\n");
     else
-        eprintf(" (line %d)\n", pr->current.line);
+        eprintf(" (%d:%d)\n", pr->current.line, pr->current.col);
 }
 
 // Core functions

@@ -27,6 +27,7 @@ typedef struct {
     const char *start;
     const char *current;
     int line;
+    int col;
 } Lexer;
 
 typedef enum {
@@ -68,6 +69,7 @@ typedef struct {
     const char *start;
     int offset;
     int line;
+    int col;
 } Token;
 
 void lexer_init(Lexer *lex, const char *source);

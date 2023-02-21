@@ -80,22 +80,24 @@ static bool match(Lexer *lex, char ch) {
 // Lexing functions
 
 // Most general token creation function
-static Token make_token(Lexer *lex, Token_t type) {
+static Token make_token(const Lexer *lex, Token_t type) {
     Token tok;
     tok.type = type;
     tok.start = lex->start;
     tok.offset = lex->current - lex->start;
     tok.line = lex->line;
+    tok.col = lex->col;
     return tok;
 }
 
 // Report errors by emiting tokens
-static Token error_token(Lexer *lex, const char *text) {
+static Token error_token(const Lexer *lex, const char *text) {
     Token err;
     err.type = TOKEN_ERR;
     err.start = text;
     err.offset = strlen(text);
     err.line = lex->line;
+    err.col = lex->col;
     return err;
 }
 
@@ -114,6 +116,7 @@ static Token number_token(Lexer *lex) {
 static Token symbol_token(Lexer *lex) {
     // We've already consumed the double colon
     // It should not be included in the symbol, so:
+    ++lex->col;
     ++lex->start;
     // Now we essentially lex an identifier
     if(is_valid_first(peek(lex))) {
@@ -132,17 +135,18 @@ static Token id_or_keyword_token(Lexer *lex) {
         advance(lex);
     // ...and then check if what we've got is an
     // identifier or a keyword
+    int length = lex->current - lex->start;
     switch(lex->start[0]) {
         case 'a':
             // Can be 'and'
-            if(lex->current - lex->start == 3
+            if(length == 3
                     && lex->start[1] == 'n'
                     && lex->start[2] == 'd')
                 return make_token(lex, TOKEN_AND);
             break;
         case 'f':
             // Can be 'false'
-            if(lex->current - lex->start == 5
+            if(length == 5
                     && lex->start[1] == 'a'
                     && lex->start[2] == 'l'
                     && lex->start[3] == 's'
@@ -151,12 +155,12 @@ static Token id_or_keyword_token(Lexer *lex) {
             break;
         case 'n':
             // Can be 'not'...
-            if(lex->current - lex->start == 3
+            if(length == 3
                     && lex->start[1] == 'o'
                     && lex->start[2] == 't')
                 return make_token(lex, TOKEN_NOT);
             // ...or 'none'
-            else if(lex->current - lex->start == 4
+            else if(length == 4
                     && lex->start[1] == 'o'
                     && lex->start[2] == 'n'
                     && lex->start[3] == 'e')
@@ -164,7 +168,7 @@ static Token id_or_keyword_token(Lexer *lex) {
             break;
         case 't':
             // Can be 'true'
-            if(lex->current - lex->start == 4
+            if(length == 4
                     && lex->start[1] == 'r'
                     && lex->start[2] == 'u'
                     && lex->start[3] == 'e')
@@ -176,18 +180,25 @@ static Token id_or_keyword_token(Lexer *lex) {
     return error_token(lex, "Variables are currently not supported");
 }
 
+// Skips whitespace and comments, appropriately resetting the column
+// count when a newline is detected
 static void skip_whitespace(Lexer *lex) {
     char ch;
     while(is_space(peek(lex)) || peek(lex) == '#') {
+        ++lex->col;
         ch = advance(lex);
         switch(ch) {
             case '\n':
                 ++lex->line;
+                // reset column count at newlines
+                lex->col = 1;
                 break;
             case '#':
                 // Python-style comments
                 while(peek(lex) != '\n' && !at_end(lex))
                     advance(lex);
+                // reset column count at newlines
+                lex->col = 1;
                 break;
         }
     }
@@ -197,10 +208,14 @@ static void skip_whitespace(Lexer *lex) {
 
 void lexer_init(Lexer *lex, const char *source) {
     lex->start = lex->current = source;
-    lex->line = 1;
+    lex->line = lex->col = 1;
 }
 
 Token lexer_get_token(Lexer *lex) {
+    // take into account the movement done when lexing the last token
+    lex->col += lex->current - lex->start;
+
+    // skip whitespace and reset the starting point
     skip_whitespace(lex);
     lex->start = lex->current;
 
