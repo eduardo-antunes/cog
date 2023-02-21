@@ -32,33 +32,34 @@ void cog_array_init(Cog_array *arr, int initial_capacity) {
         initial_capacity = COG_ARRAY_INITIAL_CAPACITY;
     arr->count = 0;
     arr->capacity = initial_capacity;
-    arr->values = (Cog_value*) cog_realloc(NULL, 0, arr->capacity * sizeof(Cog_value));
+    arr->data = (Cog_value*) cog_realloc(NULL, 0, arr->capacity * sizeof(Cog_value));
 }
 
 int cog_array_push(Cog_array *arr, Cog_value value) {
     if(arr->count + 1 > arr->capacity) {
         int new_capacity = arr->capacity * COG_ARRAY_GROWTH_FACTOR;
-        arr->values = cog_realloc(arr->values, arr->capacity, new_capacity);
+        arr->data = cog_realloc(arr->data, arr->capacity * sizeof(Cog_value), 
+                new_capacity * sizeof(Cog_value));
     }
     int index = arr->count++;
-    arr->values[index] = value;
+    arr->data[index] = value;
     return index;
 }
 
 Cog_value cog_array_get(const Cog_array *arr, int index) {
     if(index < 0 || index >= arr->count)
-        return NONE_VALUE;
-    return arr->values[index];
+        return COG_NONE;
+    return arr->data[index];
 }
 
 Cog_value cog_array_pop(Cog_array *arr) {
     if(arr->count == 0)
-        return NONE_VALUE;
-    return arr->values[--arr->count];
+        return COG_NONE;
+    return arr->data[--arr->count];
 }
 
 void cog_array_free(Cog_array *arr) {
-    free(arr->values);
+    free(arr->data);
     arr->capacity = 0;
     arr->count = 0;
 }

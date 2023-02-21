@@ -56,7 +56,7 @@ typedef enum {
 
     // Values
     TOKEN_NUM,
-    TOKEN_ID,
+    TOKEN_SYM,
 
     // Special
     TOKEN_ERR,
@@ -72,6 +72,6 @@ typedef struct {
 
 void lexer_init(Lexer *lex, const char *source);
 
-Token lexer_get_tok(Lexer *lex);
+Token lexer_get_token(Lexer *lex);
 
 #endif // COG_LEXER_H

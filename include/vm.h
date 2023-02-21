@@ -26,22 +26,20 @@
 #include "box.h"
 #include "value.h"
 
-#define COG_VM_STACK_MAX 512
-
 typedef struct {
     uint8_t *ip;
     Cog_array stack;
-} Cog_vm;
+} Cog_env;
 
 typedef enum {
     RES_OK,
     RES_ERROR,
-} Cog_vm_result;
+} Cog_result;
 
-void cog_vm_init(Cog_vm *vm);
+void cog_env_init(Cog_env *env);
 
-Cog_vm_result execute(Cog_vm *vm, const Box *box);
+Cog_result execute(Cog_env *env, const Box *box);
 
-void cog_vm_free(Cog_vm *vm);
+void cog_env_free(Cog_env *env);
 
 #endif // COG_VM_H

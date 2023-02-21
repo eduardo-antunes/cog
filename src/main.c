@@ -31,21 +31,21 @@
 #include "value.h"
 #include "vm.h"
 
-int main(void) {
+int main(int argc, char *argv[]) {
     char expr[1024];
-    Cog_vm vm;
-    cog_vm_init(&vm);
+    Cog_env env;
+    cog_env_init(&env);
     while(fgets(expr, 1024, stdin) != NULL) {
         Box box;
         box_init(&box);
         bool alright = compile(expr, &box);
         if(alright) {
-            Cog_vm_result res = execute(&vm, &box);
+            Cog_result res = execute(&env, &box);
             if(res == RES_ERROR)
                 eprintf("(!) Runtime error ocurred!\n");
         }
         box_free(&box);
     }
-    cog_vm_free(&vm);
+    cog_env_free(&env);
     return 0;
 }

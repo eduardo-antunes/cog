@@ -45,79 +45,79 @@
     if(!IS_NUMBER(a) || !IS_NUMBER(b))         \
         return RES_ERROR;                      \
                                                \
-    double x = TO_NUMBER(a), y = TO_NUMBER(b); \
+    double x = TO_DOUBLE(a), y = TO_DOUBLE(b); \
     push(type_value(op(x, y)));                \
 }
 
 #define and(p, q) ((p) && (q))
 #define or(p, q) ((p) || (q))
 
-#define BIN_LOGIC_OP(op) {                 \
-    Cog_value b = pop();                   \
-    Cog_value a = pop();                   \
-    bool p = TO_LOGIC(a), q = TO_LOGIC(b); \
-    push(BOOLEAN_VALUE(op(p, q)));         \
+#define BIN_LOGIC_OP(op) {                   \
+    Cog_value b = pop();                     \
+    Cog_value a = pop();                     \
+    bool p = IS_TRUTHY(a), q = IS_TRUTHY(b); \
+    push(COG_BOOLEAN(op(p, q)));             \
 }
 
 // Public interface
 
-void cog_vm_init(Cog_vm *vm) {
-    vm->ip = NULL;
-    cog_array_init(&vm->stack, 256);
+void cog_env_init(Cog_env *env) {
+    env->ip = NULL;
+    cog_array_init(&env->stack, 256);
 }
 
-void cog_vm_free(Cog_vm *vm) {
-    vm->ip = NULL;
-    cog_array_free(&vm->stack);
+void cog_env_free(Cog_env *env) {
+    env->ip = NULL;
+    cog_array_free(&env->stack);
 }
 
-Cog_vm_result execute(Cog_vm *vm, const Box *box) {
+Cog_result execute(Cog_env *env, const Box *box) {
 
-    #define push(value) cog_array_push(&vm->stack, (value))
-    #define pop() cog_array_pop(&vm->stack)
+    #define push(value) cog_array_push(&env->stack, (value))
+    #define pop() cog_array_pop(&env->stack)
     #define end() &box->code[box->count]
 
     uint8_t addr;
-    vm->ip = box->code;
-    while(vm->ip != end()) {
-        switch(*vm->ip) {
+    env->ip = box->code;
+    while(env->ip != end()) {
+        switch(*env->ip) {
             case OP_NEG: {
                 Cog_value a = pop();
                 if(!IS_NUMBER(a)) return RES_ERROR;
-                double x = TO_NUMBER(a);
-                push(NUMBER_VALUE(-x));
+                double x = TO_DOUBLE(a);
+                push(COG_NUMBER(-x));
                 break;
             }
             case OP_ADD:
-                BIN_NUMERIC_OP(NUMBER_VALUE, add);
+                BIN_NUMERIC_OP(COG_NUMBER, add);
                 break;
             case OP_SUB:
-                BIN_NUMERIC_OP(NUMBER_VALUE, sub);
+                BIN_NUMERIC_OP(COG_NUMBER, sub);
                 break;
             case OP_MUL:
-                BIN_NUMERIC_OP(NUMBER_VALUE, mul);
+                BIN_NUMERIC_OP(COG_NUMBER, mul);
                 break;
             case OP_DIV:
-                BIN_NUMERIC_OP(NUMBER_VALUE, div);
+                BIN_NUMERIC_OP(COG_NUMBER, div);
                 break;
 
             case OP_NOT: {
                 Cog_value a = pop();
-                bool b = TO_LOGIC(a);
-                push(BOOLEAN_VALUE(!b));
+                bool b = IS_TRUTHY(a);
+                push(COG_BOOLEAN(!b));
                 break;
             }
             case OP_EQ: {
                 Cog_value b = pop(), a = pop();
-                bool p = cog_value_equal(a, b);
-                push(BOOLEAN_VALUE(p));
+                bool p = cog_values_equal(a, b);
+                push(COG_BOOLEAN(p));
                 break;
             }
             case OP_LT:
-                BIN_NUMERIC_OP(BOOLEAN_VALUE, less);
+                BIN_NUMERIC_OP(COG_BOOLEAN, less);
                 break;
             case OP_GT:
-                BIN_NUMERIC_OP(BOOLEAN_VALUE, greater);
+                BIN_NUMERIC_OP(COG_BOOLEAN, greater);
                 break;
             case OP_AND:
                 BIN_LOGIC_OP(and);
@@ -127,18 +127,18 @@ Cog_vm_result execute(Cog_vm *vm, const Box *box) {
                 break;
 
             case OP_PSH:
-                addr = *(++vm->ip);
+                addr = *(++env->ip);
                 Cog_value a = cog_array_get(&box->constants, addr);
                 push(a);
                 break;
             case OP_PSH_TRUE:
-                push(BOOLEAN_VALUE(true));
+                push(COG_BOOLEAN(true));
                 break;
             case OP_PSH_FALSE:
-                push(BOOLEAN_VALUE(false));
+                push(COG_BOOLEAN(false));
                 break;
             case OP_PSH_NONE:
-                push(NONE_VALUE);
+                push(COG_NONE);
                 break;
 
             case OP_RET: {
@@ -154,7 +154,7 @@ Cog_vm_result execute(Cog_vm *vm, const Box *box) {
                 eprintf("Unimplemented operation\n");
                 return RES_ERROR;
         }
-        ++vm->ip;
+        ++env->ip;
     }
     return RES_OK;
 

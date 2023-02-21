@@ -32,42 +32,40 @@ typedef enum {
 } Cog_type;
 
 typedef struct {
+    Cog_type type;
     union {
         double number;
         bool boolean;
     } as;
-    Cog_type type;
 } Cog_value;
 
 void cog_value_print(Cog_value value);
 
-bool cog_value_equal(Cog_value a, Cog_value b);
+bool cog_values_equal(Cog_value a, Cog_value b);
 
 // type checks
 
-#define VALUE_IS(value, t) ((value).type == (t))
+#define IS_NUMBER(value) ((value).type == TYPE_NUMBER)
 
-#define IS_NUMBER(value) VALUE_IS((value), TYPE_NUMBER)
+#define IS_BOOLEAN(value) ((value).type == TYPE_BOOLEAN)
 
-#define IS_BOOLEAN(value) VALUE_IS((value), TYPE_BOOLEAN)
+#define IS_NONE(value) ((value).type == TYPE_NONE)
 
-#define IS_NONE(value) VALUE_IS((value), TYPE_NONE)
+// conversion: C value -> Cog value
 
-// conversion: C value -> Cog_value
+#define COG_NUMBER(n) ((Cog_value) { TYPE_NUMBER, .as.number = (n) })
 
-#define NUMBER_VALUE(n) ((Cog_value) { {.number = (n)}, TYPE_NUMBER })
+#define COG_BOOLEAN(b) ((Cog_value) { TYPE_BOOLEAN, .as.boolean = (b) })
 
-#define BOOLEAN_VALUE(b) ((Cog_value) { {.boolean = (b)}, TYPE_BOOLEAN })
+#define COG_NONE ((Cog_value) { TYPE_NONE, .as.number = 0 })
 
-#define NONE_VALUE ((Cog_value) { {.number = 0}, TYPE_NONE })
+// conversion: Cog value -> C value
 
-// conversion: Cog_value -> C value
+#define TO_DOUBLE(value) ((value).as.number)
 
-#define TO_NUMBER(value) ((value).as.number)
+#define TO_BOOL(value) ((value).as.boolean)
 
-#define TO_BOOLEAN(value) ((value).as.boolean)
-
-#define TO_LOGIC(value) \
-    ((!IS_NONE(value) && !IS_BOOLEAN(value)) || TO_BOOLEAN(value))
+#define IS_TRUTHY(value) \
+    ((!IS_NONE(value) && !IS_BOOLEAN(value)) || TO_BOOL(value))
 
 #endif // COG_VALUE_H

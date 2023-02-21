@@ -21,17 +21,16 @@
 */
 
 #include <stdio.h>
-
 #include "common.h"
 #include "value.h"
 
 void cog_value_print(Cog_value value) {
     switch(value.type) {
         case TYPE_NUMBER:
-            printf("%g", TO_NUMBER(value));
+            printf("%g", TO_DOUBLE(value));
             break;
         case TYPE_BOOLEAN:
-            printf(TO_BOOLEAN(value) ? "true" : "false");
+            printf(TO_BOOL(value) ? "true" : "false");
             break;
         case TYPE_NONE:
             printf("none");
@@ -42,14 +41,17 @@ void cog_value_print(Cog_value value) {
     }
 }
 
-bool cog_value_equal(Cog_value a, Cog_value b) {
-    if(a.type != b.type) return false;
+bool cog_values_equal(Cog_value a, Cog_value b) {
+    if(a.type != b.type) 
+        // Values of different types can never be equal
+        return false;
 
+    // Each type has a different way to check for equality
     switch(a.type) {
         case TYPE_NUMBER:
-            return TO_NUMBER(a) == TO_NUMBER(b);
+            return TO_DOUBLE(a) == TO_DOUBLE(b);
         case TYPE_BOOLEAN:
-            return TO_BOOLEAN(a) == TO_BOOLEAN(b);
+            return TO_BOOL(a) == TO_BOOL(b);
         case TYPE_NONE:
             return true;
         default:

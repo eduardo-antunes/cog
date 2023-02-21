@@ -11,6 +11,7 @@ sources = files(
   'src/debug.c',
   'src/lexer.c',
   'src/main.c',
+  'src/memory.c',
   'src/value.c',
   'src/vm.c',
 )

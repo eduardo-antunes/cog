@@ -30,7 +30,7 @@
 #define COG_ARRAY_GROWTH_FACTOR 2
 
 typedef struct {
-    Cog_value *values;
+    Cog_value *data;
     int count;
     int capacity;
 } Cog_array;

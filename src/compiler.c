@@ -70,7 +70,7 @@ static void advance(Parser *pr) {
     pr->prev = pr->current;
     // report bad tokens
     while(true) {
-        pr->current = lexer_get_tok(&pr->lex);
+        pr->current = lexer_get_token(&pr->lex);
         if(pr->current.type != TOKEN_ERR) break;
         parse_error(pr, pr->current.start);
     }
@@ -102,7 +102,7 @@ static void parse_value(Parser *pr, Box *box) {
         case TOKEN_NUM:
             advance(pr);
             double val = strtod(pr->prev.start, NULL);
-            uint8_t i = box_value_write(box, NUMBER_VALUE(val));
+            uint8_t i = box_value_write(box, COG_NUMBER(val));
             box_code_write(box, OP_PSH);
             box_code_write(box, i);
             break;
@@ -260,7 +260,6 @@ static void parse_disj(Parser *pr, Box *box) {
 bool compile(const char *source, Box *box) {
     Parser parser;
     parser_init(&parser, source);
-
     advance(&parser);
     parse_expr(&parser, box);
     if(parser.current.type != TOKEN_END)
